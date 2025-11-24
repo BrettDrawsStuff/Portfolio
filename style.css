@@ -163,3 +163,10 @@ html,body,#app{height:100%;margin:0;font-family:"Carrotflower","Amatic SC",syste
   .left-page { padding:18px; }
   .page, .cover { padding:18px; }
 }
+/* Hide the absolute <img> fallbacks so only the CSS background-image is used.
+   This removes the duplicated layer and lets background-size:cover render consistently. */
+.cover-img,
+.left-bg-img,
+.right-bg-img {
+  display: none !important;
+}
