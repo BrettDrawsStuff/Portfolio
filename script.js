@@ -1,103 +1,119 @@
 // script.js
-// Minimal, focused behavior:
-// - Closed: cover displayed. Click Enter to open.
-// - Open: show backgroundpaper.png (via CSS variable), show pages (one at a time).
-// - Titles centered in Carrotflower, black. Bottom arrow controls to navigate.
-// - Top-right dropdown menu to jump to pages.
-// - Prev/Next arrows auto-hide at edges.
+// Robust, minimal behavior that guarantees page titles, menu, and arrow controls work.
+// - Creates missing UI (pages, controls, menu) if HTML doesn't already include them.
+// - Ensures titles are visible above the open background.
+// - Lightweight: no external dependencies required.
 
 (() => {
-  const sketchbook = document.getElementById('sketchbook');
-  const cover = document.getElementById('cover');
-  const enterBtn = document.getElementById('enterBtn');
-  const pagesContainer = document.getElementById('pages');
-  const pages = Array.from(document.querySelectorAll('.pages .page'));
-  const nextBtn = document.getElementById('nextBtn');
-  const prevBtn = document.getElementById('prevBtn');
-  const controls = document.querySelector('.controls');
-
   const PAGE_TITLES = ['Home', 'About Me', 'Digital Art', 'Animations/GIFs', 'Sketches', 'Demo Reel'];
 
-  // Guard
+  // Get or create sketchbook and cover elements
+  const sketchbook = document.getElementById('sketchbook');
   if (!sketchbook) {
-    console.error('Missing #sketchbook element');
+    console.error('[sketchbook] element not found. Aborting.');
     return;
   }
+  const cover = document.getElementById('cover');
+  const enterBtn = document.getElementById('enterBtn');
 
-  // Initialize CSS vars (open background)
-  sketchbook.style.setProperty('--open-bg-url', "url('assets/backgroundpaper.png')");
-  cover.style.setProperty('--cover-src', "url('assets/bookcover.jpg')");
+  // Ensure pages container exists; if not, create it
+  let pagesContainer = document.getElementById('pages');
+  if (!pagesContainer) {
+    pagesContainer = document.createElement('div');
+    pagesContainer.id = 'pages';
+    pagesContainer.className = 'pages';
+    // append inside sketchbook
+    sketchbook.appendChild(pagesContainer);
+  }
 
-  // State
-  let current = 0;
-  const maxIndex = Math.max(0, pages.length - 1);
-
-  // Utility: ensure each right page has a title (H2) and the page-content wrapper exists
-  pages.forEach((p, i) => {
-    let content = p.querySelector('.page-content');
-    if (!content) {
-      content = document.createElement('div');
+  // Ensure at least one .page exists for each PAGE_TITLES entry.
+  let pages = Array.from(pagesContainer.querySelectorAll('.page'));
+  if (pages.length < PAGE_TITLES.length) {
+    // clear existing pages and recreate correct number to avoid mismatches
+    pagesContainer.innerHTML = '';
+    pages = PAGE_TITLES.map((title, i) => {
+      const p = document.createElement('div');
+      p.className = 'page';
+      p.dataset.index = String(i);
+      const content = document.createElement('div');
       content.className = 'page-content';
-      p.appendChild(content);
-    }
-    let h2 = content.querySelector('h2');
-    if (!h2) {
-      h2 = document.createElement('h2');
-      content.insertAdjacentElement('afterbegin', h2);
-    }
-    h2.textContent = PAGE_TITLES[i] || `Page ${i+1}`;
-    // optional body placeholder (left empty)
-    let body = content.querySelector('.body');
-    if (!body) {
-      body = document.createElement('div');
+      const h2 = document.createElement('h2');
+      h2.textContent = title;
+      content.appendChild(h2);
+      const body = document.createElement('div');
       body.className = 'body';
       content.appendChild(body);
-    }
-  });
-
-  // Activate a page (show it)
-  function activatePage(index) {
-    index = Math.max(0, Math.min(index, maxIndex));
-    pages.forEach((p, i) => {
-      if (i === index) p.classList.add('active');
-      else p.classList.remove('active');
+      p.appendChild(content);
+      pagesContainer.appendChild(p);
+      return p;
     });
-    current = index;
-    updateControlsVisibility();
+  } else {
+    // make sure titles exist and match PAGE_TITLES
+    pages.forEach((p, i) => {
+      let content = p.querySelector('.page-content');
+      if (!content) {
+        content = document.createElement('div');
+        content.className = 'page-content';
+        p.appendChild(content);
+      }
+      let h2 = content.querySelector('h2');
+      if (!h2) {
+        h2 = document.createElement('h2');
+        content.insertAdjacentElement('afterbegin', h2);
+      }
+      h2.textContent = PAGE_TITLES[i] || h2.textContent || `Page ${i + 1}`;
+      let body = content.querySelector('.body');
+      if (!body) {
+        body = document.createElement('div');
+        body.className = 'body';
+        content.appendChild(body);
+      }
+    });
   }
 
-  // Update prev/next visibility
-  function updateControlsVisibility() {
-    if (!controls) return;
-    if (current <= 0) {
-      prevBtn.style.display = 'none';
-      prevBtn.disabled = true;
-    } else {
-      prevBtn.style.display = '';
-      prevBtn.disabled = false;
-    }
-    if (current >= maxIndex) {
-      nextBtn.style.display = 'none';
-      nextBtn.disabled = true;
-    } else {
-      nextBtn.style.display = '';
-      nextBtn.disabled = false;
-    }
+  // Create controls area if missing
+  let controls = document.querySelector('.controls');
+  if (!controls) {
+    controls = document.createElement('div');
+    controls.className = 'controls';
+    controls.setAttribute('aria-hidden', 'true');
+    const prevBtn = document.createElement('button');
+    prevBtn.id = 'prevBtn';
+    prevBtn.type = 'button';
+    prevBtn.textContent = '←';
+    const nextBtn = document.createElement('button');
+    nextBtn.id = 'nextBtn';
+    nextBtn.type = 'button';
+    nextBtn.textContent = '→';
+    controls.appendChild(prevBtn);
+    controls.appendChild(nextBtn);
+    sketchbook.appendChild(controls);
+  }
+  // ensure prev/next buttons exist
+  let prevBtn = document.getElementById('prevBtn');
+  let nextBtn = document.getElementById('nextBtn');
+  if (!prevBtn) {
+    prevBtn = document.createElement('button');
+    prevBtn.id = 'prevBtn';
+    prevBtn.textContent = '←';
+    controls.insertBefore(prevBtn, controls.firstChild);
+  }
+  if (!nextBtn) {
+    nextBtn = document.createElement('button');
+    nextBtn.id = 'nextBtn';
+    nextBtn.textContent = '→';
+    controls.appendChild(nextBtn);
   }
 
-  // Menu creation (top-right)
-  function createPageMenu() {
-    let menu = document.getElementById('pageMenu');
-    if (menu) return menu;
-
-    menu = document.createElement('div');
-    menu.id = 'pageMenu';
-
+  // Create top-right menu if missing
+  let pageMenu = document.getElementById('pageMenu');
+  if (!pageMenu) {
+    pageMenu = document.createElement('div');
+    pageMenu.id = 'pageMenu';
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.title = 'Menu';
     btn.textContent = '☰';
-
+    btn.id = 'menuBtn';
     const select = document.createElement('select');
     select.id = 'pageSelect';
     PAGE_TITLES.forEach((t, i) => {
@@ -106,108 +122,119 @@
       o.textContent = t;
       select.appendChild(o);
     });
-
-    // Jump to page when select changes
-    select.addEventListener('change', (e) => {
+    // small behavior: selecting jumps to page
+    select.addEventListener('change', () => {
       const idx = Number(select.value);
       goToPage(idx);
-      select.blur();
+      select.style.display = 'none';
     });
-
-    // Toggle select visibility on btn click (desktop-friendly)
     btn.addEventListener('click', () => {
       select.style.display = (select.style.display === 'inline-block' ? 'none' : 'inline-block');
       if (select.style.display === 'inline-block') select.focus();
     });
-
-    menu.appendChild(btn);
-    menu.appendChild(select);
-    document.body.appendChild(menu); // append at body level so absolute positioning works
-    // Move it inside sketchbook for CSS selection (.sketchbook.open #pageMenu)
-    sketchbook.appendChild(menu);
-    return menu;
+    pageMenu.appendChild(btn);
+    pageMenu.appendChild(select);
+    sketchbook.appendChild(pageMenu);
   }
 
-  // Ensure menu exists
-  createPageMenu();
+  // state
+  let current = 0;
+  const maxIndex = pages.length - 1;
 
-  // Open / Close actions
+  // utilities
+  function activatePage(index) {
+    index = Math.max(0, Math.min(index, maxIndex));
+    pages.forEach((p, i) => {
+      if (i === index) p.classList.add('active');
+      else p.classList.remove('active');
+    });
+    current = index;
+    updateControlsVisibility();
+    // set pageSelect value if present
+    const select = document.getElementById('pageSelect');
+    if (select) select.value = String(index);
+  }
+
+  function updateControlsVisibility() {
+    // show/hide prev/next depending on edges
+    if (prevBtn) {
+      if (current <= 0) { prevBtn.style.display = 'none'; prevBtn.disabled = true; }
+      else { prevBtn.style.display = ''; prevBtn.disabled = false; }
+    }
+    if (nextBtn) {
+      if (current >= maxIndex) { nextBtn.style.display = 'none'; nextBtn.disabled = true; }
+      else { nextBtn.style.display = ''; nextBtn.disabled = false; }
+    }
+  }
+
+  // navigation helpers
   async function openBook() {
     if (sketchbook.classList.contains('open')) return;
     sketchbook.classList.add('open');
-    // Show pages container and activate current page
-    if (pagesContainer) pagesContainer.style.display = 'block';
+    // show pages container and ensure the current page is active
+    pagesContainer.style.display = 'block';
     activatePage(current);
-    // show controls/menu are controlled by CSS; still call update to set edge buttons
-    updateControlsVisibility();
+    // ensure menu is visible (CSS handles display via .open)
+    // ensure controls are visible (CSS handles it)
   }
   function closeBook() {
     if (!sketchbook.classList.contains('open')) return;
     sketchbook.classList.remove('open');
-    // hide pages container
-    if (pagesContainer) pagesContainer.style.display = 'none';
-    // hide controls/menu are handled by CSS
+    pagesContainer.style.display = 'none';
   }
-
-  // Navigate
   async function goToPage(index) {
     index = Math.max(0, Math.min(index, maxIndex));
     if (!sketchbook.classList.contains('open')) await openBook();
     activatePage(index);
   }
 
-  // Event handlers
+  // Attach events
   if (enterBtn) {
     enterBtn.addEventListener('click', () => {
-      if (!sketchbook.classList.contains('open')) openBook();
-      else closeBook();
+      if (sketchbook.classList.contains('open')) closeBook();
+      else openBook();
     });
+  } else {
+    // if there's no enter button in markup, let clicking the cover open the book
+    if (cover) {
+      cover.addEventListener('click', () => { if (!sketchbook.classList.contains('open')) openBook(); });
+    }
   }
   if (nextBtn) {
-    nextBtn.addEventListener('click', async () => {
-      if (current < maxIndex) {
-        await goToPage(current + 1);
-      }
+    nextBtn.addEventListener('click', () => {
+      if (current < maxIndex) goToPage(current + 1);
     });
   }
   if (prevBtn) {
-    prevBtn.addEventListener('click', async () => {
-      if (current > 0) {
-        await goToPage(current - 1);
-      }
+    prevBtn.addEventListener('click', () => {
+      if (current > 0) goToPage(current - 1);
     });
   }
 
-  // Keyboard navigation
+  // keyboard navigation
   document.addEventListener('keydown', (e) => {
     const tag = document.activeElement && document.activeElement.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-    if (e.key === 'ArrowRight') {
-      if (current < maxIndex) goToPage(current + 1);
-    } else if (e.key === 'ArrowLeft') {
-      if (current > 0) goToPage(current - 1);
-    } else if (e.key === 'Enter') {
-      if (!sketchbook.classList.contains('open')) openBook();
-    } else if (e.key === 'Escape') {
-      if (sketchbook.classList.contains('open')) closeBook();
-    }
+    if (e.key === 'ArrowRight') { if (current < maxIndex) goToPage(current + 1); }
+    if (e.key === 'ArrowLeft') { if (current > 0) goToPage(current - 1); }
+    if (e.key === 'Enter') { if (!sketchbook.classList.contains('open')) openBook(); }
+    if (e.key === 'Escape') { if (sketchbook.classList.contains('open')) closeBook(); }
   });
 
-  // Initialization: ensure pages container hidden until opened, set initial page titles
+  // initialization
   function init() {
-    // hide pages until open
-    if (pagesContainer) pagesContainer.style.display = sketchbook.classList.contains('open') ? 'block' : 'none';
-    // set initial active page content
-    pages.forEach((p, i) => {
-      if (i === current) p.classList.add('active'); else p.classList.remove('active');
-    });
+    // default: hide pages until open
+    pagesContainer.style.display = sketchbook.classList.contains('open') ? 'block' : 'none';
+    // activate first page
+    activatePage(current);
+    // make sure titles are visible (style ensures black Carrotflower)
     updateControlsVisibility();
   }
 
-  init();
-
-  // Expose for debugging
+  // expose for debugging
   window.__sketchbook = {
-    goToPage, openBook, closeBook, getState: () => ({ current, maxIndex, open: sketchbook.classList.contains('open') })
+    openBook, closeBook, goToPage, activatePage, getState: () => ({ current, maxIndex, open: sketchbook.classList.contains('open') })
   };
+
+  init();
 })();
