@@ -1,6 +1,10 @@
 // Sketchbook prototype script (uses GSAP)
-// No scaling: removed any viewport scaling logic so the layout remains predictable.
-// script.js is deferred in index.html, so DOM is available
+// This version removes all viewport scaling. It:
+// - Shows only the cover at load (centered).
+// - "Enter" button opens the book into a two-page spread (left + right backgrounds).
+// - Uses assets/bookcover.jpg, assets/leftpage.png, assets/rightpage.png as backgrounds.
+// - Ensures each page's H2 matches the page section title.
+// - Provides top-right compact menu (hamburger + select) and bottom arrow controls.
 
 const enterBtn = document.getElementById('enterBtn');
 const sketchbook = document.getElementById('sketchbook');
@@ -12,7 +16,7 @@ const nextBtn = document.getElementById('nextBtn');
 const prevBtn = document.getElementById('prevBtn');
 const controls = document.querySelector('.controls');
 
-// Page titles in order (must match the order of .pages .page elements)
+// Section titles in order
 const PAGE_TITLES = [
   'Home',
   'About Me',
@@ -22,24 +26,21 @@ const PAGE_TITLES = [
   'Demo Reel'
 ];
 
-// Ensure each page heading matches the title list
+// Ensure page H2 headings match PAGE_TITLES
 pages.forEach((p, i) => {
   const h2 = p.querySelector('h2');
-  if (h2) h2.textContent = PAGE_TITLES[i] || `Page ${i + 1}`;
+  if (h2) h2.textContent = PAGE_TITLES[i] || `Page ${i+1}`;
 });
 
-// Apply provided images as backgrounds (expects assets/bookcover.jpg, assets/leftpage.png, assets/rightpage.png)
+// Apply provided images as backgrounds
 function applyBackgrounds() {
-  // Cover image
+  // Cover background
   cover.style.backgroundImage = "url('assets/bookcover.jpg')";
   cover.style.backgroundSize = 'cover';
   cover.style.backgroundPosition = 'center';
   cover.style.backgroundRepeat = 'no-repeat';
-  // Make cover's inner art area transparent so the image shows through
-  const coverArt = cover.querySelector('.cover-art');
-  if (coverArt) coverArt.style.background = 'transparent';
 
-  // Left side background
+  // Left page background
   if (leftPage) {
     leftPage.style.backgroundImage = "url('assets/leftpage.png')";
     leftPage.style.backgroundSize = 'cover';
@@ -47,47 +48,45 @@ function applyBackgrounds() {
     leftPage.style.backgroundRepeat = 'no-repeat';
   }
 
-  // Right side / content page background (use same rightpage.png for every right page)
+  // Right page background for all right pages
   pages.forEach(p => {
     p.style.backgroundImage = "url('assets/rightpage.png')";
     p.style.backgroundSize = 'cover';
     p.style.backgroundPosition = 'center';
     p.style.backgroundRepeat = 'no-repeat';
-    // let the page-content be transparent so the background shows
     const content = p.querySelector('.page-content');
     if (content) {
       content.style.background = 'transparent';
-      content.style.color = '#111'; // keep readable text
+      content.style.color = '#111';
     }
   });
 }
 
-// Initial: only show the cover (hide left and pages and controls)
+// Initial view: only the cover should be visible and centered
 function setInitialView() {
   applyBackgrounds();
 
-  // Cover title override per your request
+  // Cover title text
   const coverTitle = cover.querySelector('.cover-title');
   if (coverTitle) coverTitle.textContent = "Brett's Portfolio";
 
-  // Hide left and right pages until Enter
+  // Hide left and pages and controls until Enter is clicked
   if (leftPage) leftPage.style.display = 'none';
   if (pagesContainer) pagesContainer.style.display = 'none';
   if (controls) controls.style.display = 'none';
 
-  // Ensure cover is reset visually
-  cover.style.zIndex = 200;
+  // Reset transforms
   cover.style.transform = 'rotateY(0deg)';
-  pages.forEach((p, i) => {
+  pages.forEach((p,i) => {
     p.style.transform = 'rotateY(0deg)';
     p.style.zIndex = (100 - i);
   });
 }
 setInitialView();
 
-// Create a compact dropdown menu placed top-right inside the sketchbook
+// Build a compact dropdown menu in the top-right of the sketchbook
 function createPageMenu() {
-  // Remove previous if present
+  // Remove any previous menu
   const existing = document.getElementById('pageMenu');
   if (existing) existing.remove();
 
@@ -97,7 +96,7 @@ function createPageMenu() {
     position: 'absolute',
     top: '12px',
     right: '14px',
-    zIndex: 500,
+    zIndex: 800,
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
@@ -125,7 +124,7 @@ function createPageMenu() {
     borderRadius: '6px',
     border: '2px solid rgba(0,0,0,0.12)',
     background: 'rgba(255,255,255,0.95)',
-    display: 'none' // start hidden
+    display: 'none'
   });
 
   PAGE_TITLES.forEach((title, idx) => {
@@ -135,37 +134,35 @@ function createPageMenu() {
     select.appendChild(opt);
   });
 
-  // Jump to page when selection changes
   select.addEventListener('change', async () => {
     const target = Number(select.value);
-    if (isNaN(target)) return;
-    await openAndReveal();
-    await goToPage(target);
+    if (!isNaN(target)) {
+      await openAndReveal();
+      await goToPage(target);
+    }
   });
 
-  // Toggle the select (compact UI)
   btn.addEventListener('click', () => {
     select.style.display = (select.style.display === 'none' || !select.style.display) ? 'inline-block' : 'none';
   });
 
   menu.appendChild(btn);
   menu.appendChild(select);
-  // append to sketchbook so it sits above the book
   sketchbook.appendChild(menu);
 }
 createPageMenu();
 
-// Reveal/hide logic when opening/closing the book
+// Open the book and reveal left/right pages (animation)
 async function openAndReveal() {
   if (sketchbook.classList.contains('open')) {
-    // already open: ensure UI visible
+    // Already open: ensure UI visible
     if (controls) controls.style.display = 'flex';
     if (leftPage) leftPage.style.display = 'block';
     if (pagesContainer) pagesContainer.style.display = 'block';
     return;
   }
 
-  // Make left and right pages visible behind the cover (but hidden initially)
+  // Make left and pages visible behind the cover (hidden initially)
   if (leftPage) {
     leftPage.style.display = 'block';
     leftPage.style.opacity = '0';
@@ -176,7 +173,7 @@ async function openAndReveal() {
   }
   if (controls) controls.style.display = 'none';
 
-  // Force a repaint for consistent animation start
+  // Ensure styles applied before animating
   void sketchbook.offsetWidth;
 
   const tl = gsap.timeline({
@@ -191,14 +188,15 @@ async function openAndReveal() {
     }
   });
 
-  // Rotate cover and fade in pages concurrently
+  // Rotate cover and fade-in pages for the opening effect
   tl.to(cover, { duration: 1.0, rotationY: -160, transformOrigin: "left center", ease: "power3.out" }, 0);
   tl.to([leftPage, pagesContainer], { duration: 0.6, opacity: 1, ease: "power2.out" }, 0.1);
 
-  // Wait for animation to settle; gsap timeline returns a promise-like, but keep a safe timeout fallback
+  // Wait for animation to finish (safe wait)
   await new Promise(res => setTimeout(res, 1100));
 }
 
+// Close/hide the book so only the cover remains visible
 function closeAndHide() {
   if (!sketchbook.classList.contains('open')) return;
 
@@ -210,7 +208,6 @@ function closeAndHide() {
     },
     onComplete: () => {
       sketchbook.classList.remove('open');
-      // hide left and pages so only cover is visible
       if (leftPage) leftPage.style.display = 'none';
       if (pagesContainer) pagesContainer.style.display = 'none';
       cover.style.transform = 'rotateY(0deg)';
@@ -221,7 +218,7 @@ function closeAndHide() {
   tl.to(cover, { duration: 0.9, rotationY: 0, transformOrigin: "left center", ease: "power2.in" }, 0.05);
 }
 
-// Enter button toggles open/close
+// Hook Enter button
 enterBtn.addEventListener('click', async () => {
   if (!sketchbook.classList.contains('open')) {
     await openAndReveal();
@@ -230,7 +227,7 @@ enterBtn.addEventListener('click', async () => {
   }
 });
 
-// Page flips (no change to page backgrounds: rightpage.png used for every right page)
+// Page flipping logic (no pages are scaled)
 let current = 0;
 const maxIndex = pages.length - 1;
 let flipping = false;
@@ -244,7 +241,7 @@ function resetPageStack() {
 }
 resetPageStack();
 
-async function flipPage(index, direction = 'forward') {
+async function flipPage(index, direction='forward') {
   return new Promise((resolve) => {
     const page = pages[index];
     const tl = gsap.timeline({
@@ -292,7 +289,7 @@ prevBtn.addEventListener('click', async () => {
   flipping = false;
 });
 
-// goToPage sequential flips
+// Sequential navigation to a specific page
 async function goToPage(target) {
   if (!sketchbook.classList.contains('open')) {
     await openAndReveal();
@@ -311,7 +308,7 @@ async function goToPage(target) {
   }
 }
 
-// keyboard controls
+// Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowRight') nextBtn.click();
   if (e.key === 'ArrowLeft') prevBtn.click();
@@ -324,7 +321,7 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// Ambient doodles animation (unchanged)
+// Ambient doodles (unchanged)
 gsap.utils.toArray('.floating').forEach((el, i) => {
   gsap.to(el, {
     y: (i + 1) * 10,
