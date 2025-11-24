@@ -13,6 +13,10 @@ const navItems = Array.from(document.querySelectorAll('.left-nav .nav-item'));
 const DESIGN_W = 1000;
 const DESIGN_H = 680;
 
+// Minimum scale to keep things readable on very small viewports.
+// Set to a smaller value if you want the book to shrink more on tiny phones.
+const MIN_SCALE = 0.5;
+
 let current = 0;
 const maxIndex = pages.length - 1;
 let flipping = false;
@@ -26,24 +30,35 @@ pages.forEach((p, i) => {
 
 // ----- Full-screen scaling helpers -----
 // compute and apply scale so the design fits the viewport while preserving aspect
+// This clamps the final scale between MIN_SCALE and 1 (no upscaling).
 function applyScale() {
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const scale = Math.min(vw / DESIGN_W, vh / DESIGN_H);
-  // set transform to scale about center; keep any existing transforms managed by animations unaffected
-  // we apply scale at the sketchbook level
+  const vw = Math.max(1, window.innerWidth);
+  const vh = Math.max(1, window.innerHeight);
+
+  // Fit the design inside the viewport while preserving aspect ratio
+  const rawScale = Math.min(vw / DESIGN_W, vh / DESIGN_H);
+
+  // Clamp so we never upscale beyond 1, and never drop below MIN_SCALE
+  const scale = Math.max(MIN_SCALE, Math.min(1, rawScale));
+
+  // Apply the scale about the center. Centering is handled by #app flexbox in CSS.
+  // This keeps the sketchbook visible and prevents the "too large" problem.
   sketchbook.style.transform = `scale(${scale})`;
-  // adjust transform-origin to center (should already be center center)
   sketchbook.style.transformOrigin = 'center center';
 }
 
-// init scale and update on resize
+// Run applyScale on load and when the viewport changes.
 window.addEventListener('resize', applyScale);
 window.addEventListener('orientationchange', () => {
   // small timeout to allow orientation layout to settle
   setTimeout(applyScale, 120);
 });
-applyScale(); // initial call
+window.addEventListener('load', () => {
+  // Some fonts (Adobe Fonts) may change layout after load; run twice to be safe.
+  applyScale();
+  setTimeout(applyScale, 200);
+});
+applyScale(); // initial call (script is deferred so DOM is available)
 
 // helper to open the book (returns a Promise)
 function openBook() {
@@ -131,6 +146,7 @@ function flipPage(index, direction = 'forward') {
       onComplete: () => {
         // housekeeping of stacking order after flip
         if (direction === 'forward') {
+          // Reset transform to a clean state so subsequent flips work consistently
           page.style.transform = 'rotateY(0deg)';
           page.style.zIndex = 10 + index;
         } else {
