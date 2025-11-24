@@ -1,6 +1,6 @@
-/* Styles for the full-screen sketchbook (no scaling) */
+/* Styles for the full-page sketchbook (no JS scaling) */
 
-/* fallback font */
+/* Load fallback font for development; Carrotflower loaded via Typekit kit in index.html */
 @import url('https://fonts.googleapis.com/css2?family=Amatic+SC:wght@400;700&display=swap');
 
 :root{
@@ -16,18 +16,19 @@ html,body,#app{height:100%;margin:0;font-family:"Carrotflower", "Amatic SC", sys
     linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 40%),
     url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"><rect fill="%23fbf7ef" width="100%" height="100%"/></svg>');}
 
-/* The sketchbook fills the available viewport with no scaling */
+/* Sketchbook container: centered and uses viewport but no JS scaling.
+   The container remains centered on closed and open states. */
 .sketchbook{
-  width:100vw;
-  height:100vh;
-  position:relative;
-  display:block;
-  transform-style:preserve-3d;
-  overflow:hidden;
-  box-sizing:border-box;
+  width: min(1100px, 96vw);
+  height: min(760px, 88vh);
+  margin: calc((100vh - min(760px, 88vh)) / 2) auto;
+  position: relative;
+  transform-style: preserve-3d;
+  box-sizing: border-box;
+  overflow: visible;
 }
 
-/* left half (static) */
+/* LEFT SIDE (static) */
 .left-page{
   position:absolute;
   left:0;
@@ -44,7 +45,7 @@ html,body,#app{height:100%;margin:0;font-family:"Carrotflower", "Amatic SC", sys
   z-index:20;
 }
 
-/* right half container for flipping pages */
+/* RIGHT SIDE (pages container) */
 .pages{
   position:absolute;
   right:0;
@@ -55,7 +56,7 @@ html,body,#app{height:100%;margin:0;font-family:"Carrotflower", "Amatic SC", sys
   z-index:30;
 }
 
-/* page styling, each page fills the right half container */
+/* Page & cover base rules, each fills the right half */
 .page, .cover {
   position:absolute;
   top:0; bottom:0;
@@ -75,15 +76,18 @@ html,body,#app{height:100%;margin:0;font-family:"Carrotflower", "Amatic SC", sys
   box-sizing:border-box;
 }
 
-/* cover sits on the right half, on top of pages */
+/* Cover specifics */
 .cover{
   z-index:200;
   background-size:cover;
   background-position:center;
   background-repeat:no-repeat;
+  display:flex;
+  align-items:center;
+  justify-content:center;
 }
 
-/* the page-content sits inside each page and holds text/controls */
+/* page-content and headings */
 .page-content {
   width:100%;
   color:var(--ink);
@@ -91,17 +95,12 @@ html,body,#app{height:100%;margin:0;font-family:"Carrotflower", "Amatic SC", sys
   font-size:20px;
   box-sizing:border-box;
 }
-
-/* heading at top of each page (title) */
 .page-content h2 {
   margin: 0 0 12px 0;
   font-size:28px;
   font-weight:700;
+  font-family: "Carrotflower", "Amatic SC", sans-serif;
 }
-
-/* compact top-right menu area (select appended by JS) */
-/* small visual layering so it sits above content */
-#pageMenu { pointer-events:auto; }
 
 /* controls centered at bottom (arrow buttons) */
 .controls {
@@ -122,10 +121,10 @@ html,body,#app{height:100%;margin:0;font-family:"Carrotflower", "Amatic SC", sys
   cursor:pointer;
 }
 
-/* hide scrollbars for this full-screen app */
-html, body { -webkit-overflow-scrolling: touch; }
+/* Menu area (JS injects #pageMenu into the sketchbook) */
+#pageMenu { position:absolute; top:12px; right:14px; z-index:500; pointer-events:auto; }
 
-/* visual central spine gutter */
+/* Visual central spine gutter */
 .sketchbook::before {
   content: "";
   position: absolute;
@@ -138,8 +137,9 @@ html, body { -webkit-overflow-scrolling: touch; }
   z-index:40;
 }
 
-/* responsive tweaks for narrow viewports */
+/* small screens tweaks */
 @media (max-width:640px) {
+  .sketchbook{ width: calc(100vw - 20px); height: calc(100vh - 20px); margin:10px auto; }
   .page-content { font-size:16px; padding:18px; }
   .page-content h2 { font-size:20px; }
   .controls button { padding:6px 10px; font-size:16px; }
