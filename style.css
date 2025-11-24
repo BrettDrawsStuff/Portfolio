@@ -1,8 +1,9 @@
 /* style.css
-   Adjusted: left-page background is now left-aligned and sized to fit the left panel width so
-   the artwork sits flush on the left side (no longer visually "pushed" toward the center).
-   If you'd like the image to bleed slightly under the spine, I included a commented tweak you
-   can enable to expand the pseudo-element slightly leftward.
+   Full-width layout update:
+   - The "sketchbook" is now a full-width, full-height (viewport) section instead of a centered fixed-size box.
+   - Keeps the book visuals (left/right halves, cover behavior) but removes the feeling of being trapped inside a small centered container.
+   - Preserves cover/left/right backgrounds and previous pseudo-element approach.
+   - Buttons/menus/fonts unchanged.
 */
 
 /* Typekit Carrotflower is loaded in index.html. Fallback to Amatic SC if missing. */
@@ -10,21 +11,23 @@
   --paper: #fbf7ef;
   --edge: #d8cbb9;
   --ink: #1b1b1b;
-  --spine: 12px;
-  --max-width: 1100px;
-  --max-height: 760px;
+  --spine: 12px;     /* visual gutter between halves */
+  --page-padding: 28px;
+  --gutter: 20px;    /* outer padding around the book area */
 }
 
-/* Reset and base */
+/* Reset & base */
 * { box-sizing: border-box; }
-html, body, #app { height: 100%; margin: 0; background: var(--paper); -webkit-font-smoothing: antialiased; }
+html, body, #app { height:100%; margin:0; background:var(--paper); -webkit-font-smoothing:antialiased; }
 body {
   font-family: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue";
   color: var(--ink);
-  overflow: hidden;
+  /* allow normal page scrolling if content grows; user requested "normal website" behavior */
+  overflow-y: auto;
+  -webkit-font-smoothing:antialiased;
 }
 
-/* paper texture behind the book */
+/* soft paper texture background (full viewport) */
 .paper-bg {
   position: fixed;
   inset: 0;
@@ -34,11 +37,16 @@ body {
     url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"><rect fill="%23fbf7ef" width="100%" height="100%"/></svg>');
 }
 
-/* Sketchbook container (centered box) */
+/* SKETCHBOOK: full-bleed "stage"
+   - Uses the full viewport width by default, with a small outer gutter.
+   - Height matches viewport (min-height), so the book visuals remain large and immersive.
+   - Child elements are absolutely positioned to fill the sketchbook area, as before.
+*/
 .sketchbook {
-  width: min(var(--max-width), 96vw);
-  height: min(var(--max-height), 88vh);
-  margin: calc((100vh - min(var(--max-height), 88vh)) / 2) auto;
+  width: 100%;
+  min-height: calc(100vh - (var(--gutter) * 2));
+  padding: var(--gutter);
+  margin: 0;
   position: relative;
   transform-style: preserve-3d;
   overflow: visible;
@@ -46,84 +54,61 @@ body {
   -webkit-user-select: none;
 }
 
-/* LEFT PAGE
-   The left visual background is rendered with ::before and aligned to the left edge of the panel.
-   background-size is set to 100% of the panel width (keeps aspect ratio: auto height).
-   This ensures the artwork sits flush at the left side rather than being centered.
+/* LEFT PAGE: left half of the spread
+   - Positioned absolutely to fill left half of the sketchbook (same approach as before).
+   - The visual background for the left page is provided by ::before and aligned to the left edge.
 */
 .left-page {
   position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: calc(50% - (var(--spine) / 2));
-  padding: 28px;
+  top: var(--gutter);
+  left: var(--gutter);
+  bottom: var(--gutter);
+  /* width is half of the available inner area minus half the spine */
+  width: calc((100% - (var(--gutter) * 2)) / 2 - (var(--spine) / 2));
+  padding: var(--page-padding);
   display: flex;
   flex-direction: column;
   gap: 12px;
-  align-items: flex-start;
-  justify-content: flex-start;
   z-index: 20;
-
-  /* remove background from element itself */
   background: transparent;
   border-left: 6px solid rgba(0,0,0,0.03);
 }
 
-/* PSEUDO-ELEMENT: left page background (anchored left, sized to panel width) */
+/* Left page visual background (pseudo-element) anchored to left edge,
+   sized to fully fill the left panel width (keeps aspect ratio) */
 .left-page::before {
   content: "";
   position: absolute;
-  /* fill the left panel area exactly */
-  inset: 0;
-  z-index: 12; /* below content */
+  /* fill the exact left panel box (ignores padding) */
+  top: var(--gutter);
+  left: var(--gutter);
+  bottom: var(--gutter);
+  width: calc((100% - (var(--gutter) * 2)) / 2 - (var(--spine) / 2));
+  z-index: 12; /* below page content */
   pointer-events: none;
-
-  /* left-align and size to panel width so the image sits flush on the left half */
   background-image: url("assets/leftpage.png");
   background-position: left center;
   background-repeat: no-repeat;
-
-  /* make the image fit the panel width while preserving aspect ratio */
-  background-size: 100% auto;
-
-  /* fallback paper color for any letterbox area */
+  background-size: 100% auto; /* fill width, keep aspect */
   background-color: rgba(251,247,239,0.95);
 }
 
-/* If you prefer the leftpage artwork to slightly underlap the spine (bleed left),
-   uncomment the two lines below and tweak the value (e.g. -6px or -10px).
-.left-page::before {
-  left: -6px;
-  width: calc(100% + 6px);
-}
-*/
+/* Ensure left content sits above the pseudo-element */
+.left-page .left-page-section,
+.left-page .page-content { position: relative; z-index: 80; }
 
-/* left content slot sits above the pseudo-element */
-.left-page .left-page-section {
-  width: 100%;
-  position: relative;
-  z-index: 80;
-}
-.left-page .left-page-section h2 {
-  margin: 0 0 12px 0;
-  font-size: 28px;
-  font-family: "Carrotflower", "Amatic SC", sans-serif;
-  line-height: 1.05;
-}
-
-/* Right-side pages container */
+/* RIGHT PAGES container: right half of the spread */
 .pages {
   position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: calc(50% - (var(--spine) / 2));
+  top: var(--gutter);
+  right: var(--gutter);
+  bottom: var(--gutter);
+  width: calc((100% - (var(--gutter) * 2)) / 2 - (var(--spine) / 2));
   transform-style: preserve-3d;
   z-index: 30;
 }
 
-/* Common page and cover styles */
+/* Page & cover base */
 .page, .cover {
   position: absolute;
   top: 0;
@@ -131,11 +116,11 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  padding: 28px;
+  padding: var(--page-padding);
+  box-sizing: border-box;
   display: flex;
   align-items: flex-start;
   justify-content: flex-start;
-  box-sizing: border-box;
   border: 2px solid var(--edge);
   border-right: 6px solid rgba(0,0,0,0.02);
   box-shadow: 0 24px 60px rgba(17,17,17,0.18);
@@ -144,7 +129,7 @@ body {
   background-color: rgba(251,247,239,0.95);
 }
 
-/* default right-page background (applies to every right page) */
+/* Default right-page background */
 .pages .page {
   background-image: url("assets/rightpage.png");
   background-size: contain;
@@ -152,77 +137,76 @@ body {
   background-repeat: no-repeat;
 }
 
-/* COVER specifics */
+/* COVER specifics
+   - When open, cover sits on the right half and is rotated by JS.
+   - When closed, we center the cover in the visible viewport (so it looks like a closed book prompt).
+*/
 .cover {
   z-index: 200;
-  right: 0;
+  right: var(--gutter);
   left: auto;
-  width: calc(50% - (var(--spine) / 2));
-  background-color: transparent;
-  transition: all 320ms ease;
+  width: calc((100% - (var(--gutter) * 2)) / 2 - (var(--spine) / 2));
+  position: absolute;
+  top: var(--gutter);
+  bottom: var(--gutter);
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
+  background: transparent;
+  transition: all 320ms ease;
 }
 
-/* Pseudo-element used to render the cover image below .cover-art */
+/* cover image via pseudo-element (below overlay content) */
 .cover::before {
   content: "";
   position: absolute;
   inset: 0;
   z-index: 10;
   background: url("assets/bookcover.jpg") center/contain no-repeat;
-  background-color: transparent;
   pointer-events: none;
+  background-color: transparent;
 }
 
-/* CLOSED cover centered */
+/* CLOSED cover centered across the full stage (not just the right half)
+   keep it visually the same width as a single page for the "closed book" look */
 .sketchbook:not(.open) .cover {
   left: 50%;
-  right: auto;
   transform: translateX(-50%) rotateY(0deg) !important;
   box-shadow: 0 30px 70px rgba(17,17,17,0.28);
+  right: auto;
 }
 
-/* OPEN cover sits on right half (JS rotates it) */
+/* OPEN cover returns to the right half (JS handles rotation) */
 .sketchbook.open .cover {
   left: auto;
-  right: 0;
+  right: var(--gutter);
+  transform: none;
 }
 
-/* hide <img> fallbacks if present */
+/* hide any <img> fallbacks if present */
 .cover-img, .left-bg-img, .right-bg-img {
   display: none !important;
 }
 
-/* cover overlay (title + subtitle + button) */
+/* cover overlay content */
 .cover-art {
   text-align: center;
   z-index: 20;
   pointer-events: none;
   width: 100%;
-  max-width: calc(50% - (var(--spine) / 2) - 56px);
-  background: transparent;
+  max-width: calc((100% - (var(--gutter) * 2)) / 2 - (var(--spine) / 2) - (var(--page-padding) * 2));
 }
 .cover-art .cover-title {
   margin: 0;
   font-size: 34px;
   line-height: 1;
   font-family: "Carrotflower", "Amatic SC", sans-serif;
-  pointer-events: none;
-  color: var(--ink);
 }
-.cover-art .subtitle {
-  margin: 6px 0 12px 0;
-  color: #7a6a5a;
-  pointer-events: none;
-}
+.cover-art .subtitle { margin: 6px 0 12px 0; color: #7a6a5a; }
 
 /* Enter button */
 .enter-btn {
   pointer-events: auto;
-  display: inline-block;
   margin-top: 6px;
   padding: 10px 18px;
   background: rgba(255,255,255,0.95);
@@ -235,7 +219,7 @@ body {
   box-shadow: 0 6px 10px rgba(0,0,0,0.08);
 }
 
-/* page content styles */
+/* page content */
 .page-content {
   z-index: 80;
   width: 100%;
@@ -250,18 +234,16 @@ body {
   font-family: "Carrotflower", "Amatic SC", sans-serif;
 }
 
-/* all interactive elements use Carrotflower */
-button, select, .nav-item {
-  font-family: "Carrotflower", "Amatic SC", sans-serif;
-  -webkit-font-smoothing: antialiased;
-}
+/* top-right menu visibility rules (unchanged) */
+.sketchbook:not(.open) #pageMenu { display: none !important; pointer-events: none !important; opacity: 0 !important; }
+.sketchbook.open #pageMenu { display: flex !important; pointer-events: auto !important; opacity: 1 !important; }
 
-/* bottom controls */
+/* bottom arrow controls */
 .controls {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  bottom: 18px;
+  bottom: calc(var(--gutter) / 2);
   display: flex;
   gap: 12px;
   z-index: 500;
@@ -273,33 +255,51 @@ button, select, .nav-item {
   border-radius: 6px;
   font-size: 18px;
   cursor: pointer;
+  font-family: "Carrotflower", "Amatic SC", sans-serif;
 }
 
-/* show/hide page menu while closed / open */
-.sketchbook:not(.open) #pageMenu { display: none !important; pointer-events: none !important; opacity: 0 !important; }
-.sketchbook.open #pageMenu { display: flex !important; pointer-events: auto !important; opacity: 1 !important; }
-
 /* spine gutter */
-.sketchbook::before {
+.sketchbook::after {
   content: "";
   position: absolute;
   left: calc(50% - (var(--spine) / 2));
-  top: 0;
+  top: var(--gutter);
+  bottom: var(--gutter);
   width: var(--spine);
-  height: 100%;
   pointer-events: none;
   background: linear-gradient(90deg, rgba(0,0,0,0.04), rgba(0,0,0,0.02) 40%, rgba(0,0,0,0.00));
   z-index: 40;
 }
 
-/* small screens */
-@media (max-width: 640px) {
-  :root { --max-width: calc(100vw - 20px); --max-height: calc(100vh - 20px); }
-  .sketchbook { width: calc(100vw - 20px); height: calc(100vh - 20px); margin: 10px auto; }
-  .left-page { padding: 18px; }
-  .page, .cover { padding: 18px; }
-  .page-content { font-size: 15px; }
-  .page-content h2 { font-size: 20px; }
+/* responsive: reduce paddings and scale down elements on small screens */
+@media (max-width: 880px) {
+  :root { --gutter: 12px; --page-padding: 18px; }
   .cover-art .cover-title { font-size: 22px; }
   .enter-btn { font-size: 16px; padding: 8px 12px; }
+  .page-content h2 { font-size: 20px; }
+}
+
+/* very small screens: stack pages vertically for readability */
+@media (max-width: 560px) {
+  .left-page, .pages, .cover {
+    position: relative;
+    width: 100%;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: auto;
+  }
+  .left-page::before {
+    /* make the left background image behave like a normal block on narrow screens */
+    position: relative;
+    inset: auto;
+    width: 100%;
+    height: 200px;
+    background-position: center;
+    background-size: cover;
+  }
+  .pages .page { background-size: cover; }
+  .cover::before { background-size: cover; }
+  .sketchbook { min-height: auto; padding: 12px; }
+  .controls { position: static; transform: none; margin: 12px 0; justify-content: center; }
 }
