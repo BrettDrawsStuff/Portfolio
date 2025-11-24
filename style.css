@@ -205,3 +205,85 @@ button, select, .nav-item { font-family: "Carrotflower", "Amatic SC", sans-serif
   opacity: 1 !important;
   pointer-events: auto !important;
 }
+
+/* END-OF-FILE OVERRIDES: fix overlay / page-content / controls visibility */
+
+/* 1) COVER OVERLAY: visible ONLY when CLOSED */
+.sketchbook:not(.open) .cover-art,
+.sketchbook:not(.open) .cover-art * {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* Hide the cover overlay when the book is OPEN (no duplicated titles/buttons) */
+.sketchbook.open .cover-art,
+.sketchbook.open .cover-art * {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* 2) PAGE CONTENT: visible ONLY when OPEN */
+.sketchbook.open .page-content,
+.sketchbook.open .left-page-section,
+.sketchbook.open .pages .page .page-content {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* Hide page content while CLOSED (so the full-screen cover is the only UI) */
+.sketchbook:not(.open) .page-content,
+.sketchbook:not(.open) .left-page-section,
+.sketchbook:not(.open) .pages .page .page-content {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* 3) CONTROLS (arrows / bottom controls): only visible when OPEN */
+/* Note: individual next/prev still controlled by JS to hide edges; this shows the container. */
+.sketchbook.open .controls {
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* Keep the controls hidden while CLOSED */
+.sketchbook:not(.open) .controls {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* 4) Ensure cover pseudo-element does not overlay content when closed (if used) */
+.sketchbook:not(.open) .cover::before {
+  display: none !important;
+}
+
+/* 5) Safety: ensure menu visibility still controlled by .open state (no change) */
+.sketchbook.open #pageMenu {
+  display: flex !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+.sketchbook:not(.open) #pageMenu {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* 6) Accessibility: hide cover-art from assistive tech when open and expose when closed.
+   If your JS toggles aria-hidden for menu it can also toggle this, but this is CSS-only.
+*/
+.sketchbook.open .cover-art { aria-hidden: true; }
+.sketchbook:not(.open) .cover-art { aria-hidden: false; }
+
+/* End of overrides */
