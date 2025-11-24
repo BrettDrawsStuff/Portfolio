@@ -1,20 +1,18 @@
 // script.js
-// Minimal, focused behavior. Key change: page menu's select is hidden by default so only the icon
-// shows until clicked. Clicking outside the menu closes the select.
+// Full replacement — small, robust dropdown (icon-only until clicked).
+// - Creates missing UI pieces if they're not present.
+// - Page menu uses a custom options list (not a native <select>) so it starts minimized.
+// - Clicking the menu icon toggles the options; clicking outside closes them.
 
 (() => {
   const PAGE_TITLES = ['Home', 'About Me', 'Digital Art', 'Animations/GIFs', 'Sketches', 'Demo Reel'];
 
-  // Get or create sketchbook and cover elements
   const sketchbook = document.getElementById('sketchbook');
-  if (!sketchbook) {
-    console.error('[sketchbook] element not found. Aborting.');
-    return;
-  }
+  if (!sketchbook) { console.error('No #sketchbook element found'); return; }
   const cover = document.getElementById('cover');
   const enterBtn = document.getElementById('enterBtn');
 
-  // Ensure pages container exists; if not, create it
+  // ensure pages container
   let pagesContainer = document.getElementById('pages');
   if (!pagesContainer) {
     pagesContainer = document.createElement('div');
@@ -23,7 +21,7 @@
     sketchbook.appendChild(pagesContainer);
   }
 
-  // Ensure pages exist for each PAGE_TITLES entry (recreate to ensure consistency)
+  // ensure pages exist and have titles
   let pages = Array.from(pagesContainer.querySelectorAll('.page'));
   if (pages.length < PAGE_TITLES.length) {
     pagesContainer.innerHTML = '';
@@ -44,7 +42,6 @@
       return p;
     });
   } else {
-    // Make sure titles match PAGE_TITLES
     pages.forEach((p, i) => {
       let content = p.querySelector('.page-content');
       if (!content) {
@@ -57,7 +54,7 @@
         h2 = document.createElement('h2');
         content.insertAdjacentElement('afterbegin', h2);
       }
-      h2.textContent = PAGE_TITLES[i] || h2.textContent || `Page ${i + 1}`;
+      h2.textContent = PAGE_TITLES[i] || h2.textContent || `Page ${i+1}`;
       let body = content.querySelector('.body');
       if (!body) {
         body = document.createElement('div');
@@ -67,111 +64,132 @@
     });
   }
 
-  // Create controls area if missing
+  // controls (prev/next)
   let controls = document.querySelector('.controls');
   if (!controls) {
     controls = document.createElement('div');
     controls.className = 'controls';
-    controls.setAttribute('aria-hidden', 'true');
-    const prevBtn = document.createElement('button');
-    prevBtn.id = 'prevBtn';
-    prevBtn.type = 'button';
-    prevBtn.textContent = '◀';
-    const nextBtn = document.createElement('button');
-    nextBtn.id = 'nextBtn';
-    nextBtn.type = 'button';
-    nextBtn.textContent = '▶';
-    controls.appendChild(prevBtn);
-    controls.appendChild(nextBtn);
     sketchbook.appendChild(controls);
   }
-  // ensure prev/next buttons exist
   let prevBtn = document.getElementById('prevBtn');
   let nextBtn = document.getElementById('nextBtn');
   if (!prevBtn) {
     prevBtn = document.createElement('button');
     prevBtn.id = 'prevBtn';
+    prevBtn.type = 'button';
     prevBtn.textContent = '◀';
-    controls.insertBefore(prevBtn, controls.firstChild);
+    controls.appendChild(prevBtn);
   }
   if (!nextBtn) {
     nextBtn = document.createElement('button');
     nextBtn.id = 'nextBtn';
+    nextBtn.type = 'button';
     nextBtn.textContent = '▶';
     controls.appendChild(nextBtn);
   }
 
-  // Create top-right menu if missing
+  // create/customize page menu (top-right) — custom options (ul) to avoid native select behavior
   let pageMenu = document.getElementById('pageMenu');
   if (!pageMenu) {
     pageMenu = document.createElement('div');
     pageMenu.id = 'pageMenu';
+    // icon button
     const btn = document.createElement('button');
     btn.type = 'button';
+    btn.className = 'menu-btn';
+    btn.setAttribute('aria-expanded', 'false');
+    btn.setAttribute('aria-haspopup', 'true');
     btn.textContent = '☰';
-    btn.id = 'menuBtn';
-    const select = document.createElement('select');
-    select.id = 'pageSelect';
-    // key: keep the select hidden by default; show only when menu button toggles it
-    select.style.display = 'none';
-    PAGE_TITLES.forEach((t, i) => {
-      const o = document.createElement('option');
-      o.value = String(i);
-      o.textContent = t;
-      select.appendChild(o);
-    });
-    // selecting jumps to page and hides the select again
-    select.addEventListener('change', () => {
-      const idx = Number(select.value);
-      goToPage(idx);
-      select.style.display = 'none';
-    });
-    // Toggle select visibility when menu button clicked
-    btn.addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      select.style.display = (select.style.display === 'inline-block' ? 'none' : 'inline-block');
-      if (select.style.display === 'inline-block') select.focus();
+    // options container
+    const options = document.createElement('div');
+    options.className = 'menu-options';
+    options.setAttribute('role', 'menu');
+    PAGE_TITLES.forEach((t, idx) => {
+      const opt = document.createElement('button');
+      opt.type = 'button';
+      opt.className = 'menu-option';
+      opt.setAttribute('role', 'menuitem');
+      opt.dataset.index = String(idx);
+      opt.textContent = t;
+      opt.addEventListener('click', (e) => {
+        const i = Number(e.currentTarget.dataset.index);
+        goToPage(i);
+        closeMenu();
+      });
+      options.appendChild(opt);
     });
     pageMenu.appendChild(btn);
-    pageMenu.appendChild(select);
+    pageMenu.appendChild(options);
     sketchbook.appendChild(pageMenu);
+
+    // toggle behavior
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const isOpen = pageMenu.classList.toggle('open');
+      btn.setAttribute('aria-expanded', String(isOpen));
+      // if opened, focus first option for keyboard users
+      if (isOpen) {
+        const first = options.querySelector('.menu-option');
+        if (first) first.focus();
+      }
+    });
   } else {
-    // If menu exists in markup, make sure its select is hidden initially
-    const select = pageMenu.querySelector('select');
-    if (select) select.style.display = 'none';
-    const btn = pageMenu.querySelector('button');
+    // ensure menu-options exist and are hidden initially
+    const btn = pageMenu.querySelector('.menu-btn');
+    const options = pageMenu.querySelector('.menu-options') || (function createOptions() {
+      const o = document.createElement('div');
+      o.className = 'menu-options';
+      pageMenu.appendChild(o);
+      return o;
+    })();
+    // rebuild options to match PAGE_TITLES
+    options.innerHTML = '';
+    PAGE_TITLES.forEach((t, idx) => {
+      const opt = document.createElement('button');
+      opt.type = 'button';
+      opt.className = 'menu-option';
+      opt.dataset.index = String(idx);
+      opt.textContent = t;
+      opt.addEventListener('click', (e) => {
+        const i = Number(e.currentTarget.dataset.index);
+        goToPage(i);
+        closeMenu();
+      });
+      options.appendChild(opt);
+    });
     if (btn) {
-      // ensure button toggles select visibility
+      btn.setAttribute('aria-expanded', 'false');
       btn.addEventListener('click', (ev) => {
         ev.stopPropagation();
-        const s = pageMenu.querySelector('select');
-        if (!s) return;
-        s.style.display = (s.style.display === 'inline-block' ? 'none' : 'inline-block');
-        if (s.style.display === 'inline-block') s.focus();
+        const isOpen = pageMenu.classList.toggle('open');
+        btn.setAttribute('aria-expanded', String(isOpen));
       });
     }
   }
 
-  // Close the menu select when clicking outside
+  // close menu helper
+  function closeMenu() {
+    if (!pageMenu) return;
+    pageMenu.classList.remove('open');
+    const btn = pageMenu.querySelector('.menu-btn');
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+  }
+
+  // close menu on outside click
   document.addEventListener('click', (ev) => {
-    const pm = document.getElementById('pageMenu');
-    if (!pm) return;
-    const s = pm.querySelector('select');
-    const btn = pm.querySelector('button');
-    if (!s) return;
-    if (s.style.display === 'inline-block') {
-      // if click target is outside pageMenu, hide select
-      if (!pm.contains(ev.target)) {
-        s.style.display = 'none';
-      }
-    }
+    if (!pageMenu) return;
+    if (!pageMenu.contains(ev.target)) closeMenu();
+  });
+
+  // keyboard: Escape closes menu
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape') closeMenu();
   });
 
   // state
   let current = 0;
   const maxIndex = pages.length - 1;
 
-  // utilities
   function activatePage(index) {
     index = Math.max(0, Math.min(index, maxIndex));
     pages.forEach((p, i) => {
@@ -180,8 +198,6 @@
     });
     current = index;
     updateControlsVisibility();
-    const select = document.getElementById('pageSelect');
-    if (select) select.value = String(index);
   }
 
   function updateControlsVisibility() {
@@ -195,23 +211,19 @@
     }
   }
 
-  // navigation helpers
   async function openBook() {
     if (sketchbook.classList.contains('open')) return;
     sketchbook.classList.add('open');
     pagesContainer.style.display = 'block';
     activatePage(current);
-    // ensure select is hidden on open
-    const select = document.getElementById('pageSelect');
-    if (select) select.style.display = 'none';
+    // ensure menu closed initially when opening
+    closeMenu();
   }
   function closeBook() {
     if (!sketchbook.classList.contains('open')) return;
     sketchbook.classList.remove('open');
     pagesContainer.style.display = 'none';
-    // hide select when closing
-    const select = document.getElementById('pageSelect');
-    if (select) select.style.display = 'none';
+    closeMenu();
   }
   async function goToPage(index) {
     index = Math.max(0, Math.min(index, maxIndex));
@@ -219,52 +231,37 @@
     activatePage(index);
   }
 
-  // Attach events
+  // attach events
   if (enterBtn) {
     enterBtn.addEventListener('click', () => {
       if (sketchbook.classList.contains('open')) closeBook();
       else openBook();
     });
-  } else {
-    if (cover) {
-      cover.addEventListener('click', () => { if (!sketchbook.classList.contains('open')) openBook(); });
-    }
-  }
-  if (nextBtn) {
-    nextBtn.addEventListener('click', () => {
-      if (current < maxIndex) goToPage(current + 1);
-    });
-  }
-  if (prevBtn) {
-    prevBtn.addEventListener('click', () => {
-      if (current > 0) goToPage(current - 1);
-    });
+  } else if (cover) {
+    cover.addEventListener('click', () => { if (!sketchbook.classList.contains('open')) openBook(); });
   }
 
-  // keyboard navigation
+  if (nextBtn) nextBtn.addEventListener('click', () => { if (current < maxIndex) goToPage(current + 1); });
+  if (prevBtn) prevBtn.addEventListener('click', () => { if (current > 0) goToPage(current - 1); });
+
   document.addEventListener('keydown', (e) => {
     const tag = document.activeElement && document.activeElement.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
     if (e.key === 'ArrowRight') { if (current < maxIndex) goToPage(current + 1); }
-    if (e.key === 'ArrowLeft') { if (current > 0) goToPage(current - 1); }
+    if (e.key === 'ArrowLeft')  { if (current > 0) goToPage(current - 1); }
     if (e.key === 'Enter') { if (!sketchbook.classList.contains('open')) openBook(); }
     if (e.key === 'Escape') { if (sketchbook.classList.contains('open')) closeBook(); }
   });
 
-  // initialization
+  // init
   function init() {
     pagesContainer.style.display = sketchbook.classList.contains('open') ? 'block' : 'none';
     activatePage(current);
-    updateControlsVisibility();
-    // make sure the select is hidden on load
-    const select = document.getElementById('pageSelect');
-    if (select) select.style.display = 'none';
+    closeMenu();
   }
 
-  // expose for debugging
-  window.__sketchbook = {
-    openBook, closeBook, goToPage, activatePage, getState: () => ({ current, maxIndex, open: sketchbook.classList.contains('open') })
-  };
+  // expose for debug
+  window.__sketchbook = { openBook, closeBook, goToPage, getState: () => ({ current, maxIndex, open: sketchbook.classList.contains('open') }) };
 
   init();
 })();
