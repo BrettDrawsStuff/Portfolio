@@ -1,6 +1,8 @@
 /* style.css
-   Updated stylesheet: keeps previous layout and backgrounds, and hides the top-right page menu
-   while the sketchbook is closed. The menu becomes visible only when the book is opened.
+   Updated stylesheet: left-page background now uses a ::before pseudo-element so the image
+   is positioned consistently (centered inside the left panel) and not affected by padding.
+   This prevents the leftpage.png from visually being pushed to the right when the book is open.
+   Remaining rules preserved from previous version.
 */
 
 /* Typekit Carrotflower is loaded in index.html. Fallback to Amatic SC if missing. */
@@ -44,7 +46,10 @@ body {
   -webkit-user-select: none;
 }
 
-/* LEFT PAGE */
+/* LEFT PAGE
+   NOTE: background removed from the element itself and applied with ::before so
+   the background is centered relative to the left panel's border box (ignores padding).
+*/
 .left-page {
   position: absolute;
   top: 0;
@@ -59,17 +64,31 @@ body {
   justify-content: flex-start;
   z-index: 20;
 
-  background-image: url("assets/leftpage.png");
-  background-size: contain;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-color: rgba(251,247,239,0.95);
+  /* remove background from element to avoid position shifts due to padding */
+  background: transparent;
   border-left: 6px solid rgba(0,0,0,0.03);
+}
+
+/* PSEUDO-ELEMENT: left page visual background
+   - absolutely fills the left panel without including element padding in centering math
+   - pointer-events:none so content is interactive
+   - placed beneath page-content via z-index
+*/
+.left-page::before {
+  content: "";
+  position: absolute;
+  inset: 0; /* fill left page area exactly */
+  z-index: 12; /* below content (page-content uses z-index:80) */
+  background: url("assets/leftpage.png") center/contain no-repeat;
+  background-color: rgba(251,247,239,0.95); /* fallback paper color */
+  pointer-events: none;
 }
 
 /* left slot inserted by JS for the active section content */
 .left-page .left-page-section {
   width: 100%;
+  position: relative; /* keep content above the ::before background */
+  z-index: 80;
 }
 .left-page .left-page-section h2 {
   margin: 0 0 12px 0;
@@ -129,22 +148,21 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
+  position: relative; /* required for ::before positioning */
 }
 
-/* Use pseudo-element for cover image so overlay content cannot obscure it */
+/* Pseudo-element used to render the cover image below .cover-art */
 .cover::before {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 10;
+  z-index: 10; /* below .cover-art (which will have z-index: 20) */
   background: url("assets/bookcover.jpg") center/contain no-repeat;
   background-color: transparent;
   pointer-events: none;
 }
 
-/* CLOSED cover centered: position the cover in the center of the sketchbook,
-   give same visual width as left page so it looks like a closed book. */
+/* CLOSED cover centered */
 .sketchbook:not(.open) .cover {
   left: 50%;
   right: auto;
@@ -152,7 +170,7 @@ body {
   box-shadow: 0 30px 70px rgba(17,17,17,0.28);
 }
 
-/* OPEN cover sits back on the right half (JS rotates it) */
+/* OPEN cover sits on right half (JS rotates it) */
 .sketchbook.open .cover {
   left: auto;
   right: 0;
@@ -242,20 +260,9 @@ button, select, .nav-item {
   cursor: pointer;
 }
 
-/* ---- NEW: hide page menu while the book is closed ----
-   The #pageMenu element is injected by JS. This rule keeps it hidden (and non-interactive)
-   until the sketchbook has the .open class (i.e., user clicked Enter to open the book). */
-.sketchbook:not(.open) #pageMenu {
-  display: none !important;
-  pointer-events: none !important;
-  opacity: 0 !important;
-}
-/* When book is open, show the menu (when JS toggles .open) */
-.sketchbook.open #pageMenu {
-  display: flex !important;
-  pointer-events: auto !important;
-  opacity: 1 !important;
-}
+/* show/hide page menu while closed / open */
+.sketchbook:not(.open) #pageMenu { display: none !important; pointer-events: none !important; opacity: 0 !important; }
+.sketchbook.open #pageMenu { display: flex !important; pointer-events: auto !important; opacity: 1 !important; }
 
 /* spine gutter */
 .sketchbook::before {
