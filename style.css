@@ -1,10 +1,12 @@
 /* style.css
-   Authoritative replacement:
-   - Closed: full-viewport cover with centered title/subtitle/Enter button.
-   - Open: full-spread background (assets/backgroundpaper.png); each page shows a
-     centered H2 title in black (Carrotflower). Page menu top-right and prev/next
-     controls at bottom-center are visible and on top of the background.
-   - Defensive z-indexing and pointer-events so UI is always above the background.
+   Full-file replacement (authoritative).
+   - Closed state: full-viewport cover (assets/bookcover.jpg) with centered cover-art.
+   - Open state: full-spread background (assets/backgroundpaper.png) *behind* the UI.
+   - Page titles moved to the top-center of the page area when open.
+   - Page titles use the Carrotflower font and are black.
+   - Top-right dropdown menu visible when open.
+   - Bottom-centered prev/next controls visible when open and auto-hide at edges (JS).
+   - Responsive fallbacks for small screens.
 */
 
 :root{
@@ -15,23 +17,25 @@
   --open-bg-url: url("assets/backgroundpaper.png");
   --cover-src: url("assets/bookcover.jpg");
   --font-main: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue";
-  --max-cover-width: 1100px;
+  --title-top-offset: 32px; /* how far down from the top the page title sits when open */
 }
 
-/* Reset / base */
+/* Reset + base */
 * { box-sizing: border-box; }
 html, body, #app { height: 100%; margin: 0; background: var(--paper); -webkit-font-smoothing: antialiased; }
 body { font-family: var(--font-main); color: var(--ink); -webkit-font-smoothing: antialiased; }
 
-/* Paper texture behind the whole site (non-interfering) */
+/* Decorative paper background (non-interfering) */
 .paper-bg {
-  position: fixed; inset: 0; z-index: -2;
+  position: fixed;
+  inset: 0;
+  z-index: -2;
   background:
     linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 40%),
     url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"><rect fill="%23fbf7ef" width="100%" height="100%"/></svg>');
 }
 
-/* Stage */
+/* Sketchbook stage */
 .sketchbook {
   width: 100%;
   min-height: 100vh;
@@ -40,12 +44,12 @@ body { font-family: var(--font-main); color: var(--ink); -webkit-font-smoothing:
   overflow: visible;
 }
 
-/* ---------------------------
-   CLOSED STATE (default)
-   --------------------------- */
+/* -------------------------------
+   CLOSED STATE: full-screen cover
+   ------------------------------- */
 .sketchbook:not(.open) .cover {
   position: fixed !important;
-  inset: 0 !important;
+  inset: 0 !important; /* fill viewport */
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -59,13 +63,13 @@ body { font-family: var(--font-main); color: var(--ink); -webkit-font-smoothing:
   box-shadow: none !important;
 }
 
-/* Cover overlay (title/subtitle/enter) only when closed */
+/* cover overlay visible only when closed */
 .sketchbook:not(.open) .cover-art {
   text-align: center;
   color: #fff;
   z-index: 2010;
   pointer-events: none;
-  width: min(var(--max-cover-width), 92vw);
+  width: min(1100px, 94vw);
   padding: 18px;
 }
 .sketchbook:not(.open) .cover-art .cover-title {
@@ -91,7 +95,7 @@ body { font-family: var(--font-main); color: var(--ink); -webkit-font-smoothing:
   box-shadow: 0 8px 24px rgba(0,0,0,0.45);
 }
 
-/* Hide pages/menu/controls while closed */
+/* hide pages/menu/controls while closed */
 .sketchbook:not(.open) .pages,
 .sketchbook:not(.open) #pageMenu,
 .sketchbook:not(.open) .controls {
@@ -100,10 +104,10 @@ body { font-family: var(--font-main); color: var(--ink); -webkit-font-smoothing:
   opacity: 0 !important;
 }
 
-/* ---------------------------
-   OPEN STATE
-   --------------------------- */
-/* backgroundpaper as a full-spread layer behind UI */
+/* -------------------------------
+   OPEN STATE: backgroundpaper + UI
+   ------------------------------- */
+/* open background placed behind UI; keep it non-interactive */
 .sketchbook.open::before {
   content: "";
   position: absolute;
@@ -116,7 +120,10 @@ body { font-family: var(--font-main); color: var(--ink); -webkit-font-smoothing:
   pointer-events: none;
 }
 
-/* cover reverts to right page area */
+/* ensure background does not intercept clicks */
+.sketchbook.open::before { pointer-events: none; }
+
+/* when open, cover reverts to right page area */
 .sketchbook.open .cover {
   position: absolute !important;
   top: var(--gutter);
@@ -128,7 +135,7 @@ body { font-family: var(--font-main); color: var(--ink); -webkit-font-smoothing:
 }
 .sketchbook.open .cover-art { display: none !important; pointer-events: none !important; }
 
-/* Pages container: full area above the open background */
+/* pages container spans the full interior area */
 .pages {
   position: absolute;
   top: var(--gutter);
@@ -137,43 +144,65 @@ body { font-family: var(--font-main); color: var(--ink); -webkit-font-smoothing:
   bottom: var(--gutter);
   z-index: 10; /* above background */
   display: flex;
-  align-items: center;
+  /* place content at the top center when open */
+  align-items: flex-start;
   justify-content: center;
+  overflow: hidden;
+  pointer-events: none; /* page wrappers non-interactive; content is */
 }
 
-/* Individual pages - only .active is shown */
-.pages .page { display: none; width: 100%; height: 100%; align-items: center; justify-content: center; }
-.pages .page.active { display: flex; pointer-events: auto; }
-
-/* Page content: centered H2 title in black Carrotflower */
-.page-content {
-  text-align: center;
-  max-width: 1000px;
+/* individual page */
+.pages .page {
+  display: none;
   width: 100%;
-  padding: 24px;
+  height: 100%;
+  position: relative;
 }
+.pages .page.active {
+  display: block;
+  pointer-events: auto;
+}
+
+/* Page content: positioned at top-center of page area when open */
+.page-content {
+  position: absolute;
+  top: var(--title-top-offset); /* distance from the top of the page area */
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(1000px, 94%);
+  text-align: center;
+  pointer-events: auto;
+  z-index: 12; /* above background */
+}
+
+/* H2: page title styling (black Carrotflower) */
 .page-content h2 {
-  margin: 0 0 12px 0;
-  font-size: clamp(24px, 5.5vw, 48px);
+  margin: 0 0 8px 0;
+  font-size: clamp(22px, 4.8vw, 44px);
   font-family: var(--font-main);
   color: #000;
   font-weight: 700;
-  line-height: 1;
+  line-height: 1.05;
 }
 
-/* Optional body text */
-.page-content .body { margin-top: 10px; color: #222; font-size: 18px; }
+/* optional body area under the title */
+.page-content .body {
+  margin-top: 12px;
+  color: #222;
+  font-size: 16px;
+}
 
-/* Controls: bottom-centered arrow buttons, visible when open */
+/* Controls at bottom center (visible when open) */
 .controls {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
   bottom: calc(var(--gutter) / 2);
-  z-index: 300;
+  z-index: 300; /* above page content */
   display: none;
   gap: 12px;
   align-items: center;
+  justify-content: center;
 }
 .sketchbook.open .controls { display: flex !important; pointer-events: auto; }
 .controls button {
@@ -186,12 +215,12 @@ body { font-family: var(--font-main); color: var(--ink); -webkit-font-smoothing:
   font-size: 18px;
 }
 
-/* Page menu: top-right, visible when open */
+/* Top-right page menu (visible when open) */
 #pageMenu {
   position: absolute;
   top: 12px;
   right: 14px;
-  z-index: 400; /* above page titles */
+  z-index: 400; /* above titles */
   display: none;
   gap: 8px;
   align-items: center;
@@ -207,14 +236,24 @@ body { font-family: var(--font-main); color: var(--ink); -webkit-font-smoothing:
   cursor: pointer;
 }
 
-/* Responsive: stacked flow on small screens */
+/* ensure page H2s remain visible above any other layer */
+.pages .page .page-content h2 { z-index: 410 !important; position: relative; }
+
+/* Responsive adjustments */
+@media (max-width: 880px) {
+  :root { --gutter: 16px; --title-top-offset: 24px; }
+  .page-content h2 { font-size: clamp(20px, 6.2vw, 40px); }
+}
 @media (max-width: 560px) {
   .sketchbook { padding: 12px; }
+  /* closed cover becomes relative so it doesn't force a fixed full-bleed */
   .sketchbook:not(.open) .cover { position: relative !important; height: auto !important; }
-  .sketchbook.open::before { display: none !important; } /* avoid forcing full-bleed on tiny screens */
-  .pages { position: relative; top: auto; left: auto; right: auto; bottom: auto; height: auto; }
-  .pages .page { display: block; width: 100%; }
+  /* avoid forcing full-spread on tiny screens */
+  .sketchbook.open::before { display: none !important; }
+  /* stack pages for readability on small screens */
+  .pages { position: relative; top: auto; left: auto; right: auto; bottom: auto; height: auto; align-items: stretch; }
   .pages .page.active { display: block; }
+  .page-content { position: relative; transform: none; left: auto; top: 12px; margin: 0 auto; }
   .controls { position: static; transform: none; margin: 12px 0; }
   #pageMenu { position: sticky; top: 8px; right: 8px; }
 }
