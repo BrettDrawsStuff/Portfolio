@@ -1,7 +1,9 @@
 /* style.css
-   Update: left page background now uses the same approach as right pages
-   (background-image on the element with center/contain), mirroring the rightpage setup.
-   Rest of layout preserved (full-width stage, cover pseudo-element, menu rules, etc).
+   Updated: when the book is opened, the left and right panel visuals are hidden
+   and the sketchbook uses rightpage.png as a full spread background.
+   - The open-state background is rendered via .sketchbook.open::before.
+   - Left/right panels are hidden visually when open to give a single background look.
+   - JS will set the --open-bg-url CSS variable (see script.js) so the image path is consistent.
 */
 
 /* Typekit Carrotflower is loaded in index.html. Fallback to Amatic SC if missing. */
@@ -21,7 +23,6 @@ body {
   font-family: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue";
   color: var(--ink);
   overflow-y: auto;
-  -webkit-font-smoothing:antialiased;
 }
 
 /* soft paper texture background (full viewport) */
@@ -45,12 +46,26 @@ body {
   overflow: visible;
   user-select: none;
   -webkit-user-select: none;
+  /* fallback open background variable (set from JS) */
+  --open-bg-url: url("assets/rightpage.png");
 }
 
-/* LEFT PAGE
-   Mirror setup of right pages: background-image on the element itself,
-   centered and sized with contain, same as .pages .page.
-*/
+/* When opened, show a full-bleed background using the rightpage artwork.
+   We render it via a pseudo-element so it's below the cover title/button but above the page background. */
+.sketchbook.open::before {
+  content: "";
+  position: absolute;
+  top: var(--gutter);
+  left: var(--gutter);
+  right: var(--gutter);
+  bottom: var(--gutter);
+  z-index: 6; /* below cover-art (z-index:20) and controls (z-index:500) */
+  background: var(--open-bg-url) center/cover no-repeat;
+  pointer-events: none;
+  border-radius: 0;
+}
+
+/* LEFT PAGE: left half (kept in DOM but hidden visually when open) */
 .left-page {
   position: absolute;
   top: var(--gutter);
@@ -62,28 +77,14 @@ body {
   flex-direction: column;
   gap: 12px;
   z-index: 20;
-  background: transparent;
-  border-left: 6px solid rgba(0,0,0,0.03);
-
-  /* Mirror of right-page background setup */
   background-image: url("assets/leftpage.png");
-  background-size: contain;      /* same as right pages */
-  background-position: center;   /* center like the right pages */
+  background-size: contain;
+  background-position: center;
   background-repeat: no-repeat;
-  background-color: rgba(251,247,239,0.95);
+  border-left: 6px solid rgba(0,0,0,0.03);
 }
 
-/* Ensure left content sits above the background */
-.left-page .left-page-section,
-.left-page .page-content { position: relative; z-index: 80; }
-.left-page .left-page-section h2 {
-  margin: 0 0 12px 0;
-  font-size: 28px;
-  font-family: "Carrotflower", "Amatic SC", sans-serif;
-  line-height: 1.05;
-}
-
-/* RIGHT PAGES container */
+/* RIGHT PAGES container (kept in DOM but hidden visually when open) */
 .pages {
   position: absolute;
   top: var(--gutter);
@@ -115,7 +116,7 @@ body {
   background-color: rgba(251,247,239,0.95);
 }
 
-/* Default right-page background (as before) */
+/* Default right-page background */
 .pages .page {
   background-image: url("assets/rightpage.png");
   background-size: contain;
@@ -158,16 +159,24 @@ body {
   right: auto;
 }
 
-/* OPEN cover returns to right half */
+/* OPEN cover returns to the right half */
 .sketchbook.open .cover {
   left: auto;
   right: var(--gutter);
   transform: none;
 }
 
-/* hide any <img> fallbacks if present */
-.cover-img, .left-bg-img, .right-bg-img {
-  display: none !important;
+/* HIDE left/right visual panels when the book is open.
+   Panels remain in the DOM (so flipping and accessibility remain functional),
+   but their visuals (backgrounds, borders, shadows) are removed so the open
+   background (rightpage.png) shows as a single full-spread image. */
+.sketchbook.open .left-page,
+.sketchbook.open .pages,
+.sketchbook.open .pages .page {
+  background-image: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
 }
 
 /* cover overlay content */
@@ -216,7 +225,7 @@ body {
   font-family: "Carrotflower", "Amatic SC", sans-serif;
 }
 
-/* top-right menu visibility */
+/* top-right menu visibility (unchanged) */
 .sketchbook:not(.open) #pageMenu { display: none !important; pointer-events: none !important; opacity: 0 !important; }
 .sketchbook.open #pageMenu { display: flex !important; pointer-events: auto !important; opacity: 1 !important; }
 
@@ -240,7 +249,7 @@ body {
   font-family: "Carrotflower", "Amatic SC", sans-serif;
 }
 
-/* spine gutter */
+/* spine gutter (unchanged visual) */
 .sketchbook::after {
   content: "";
   position: absolute;
