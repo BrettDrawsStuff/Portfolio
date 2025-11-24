@@ -1,6 +1,7 @@
 // Sketchbook prototype script (uses GSAP)
-// Updated so left and right halves show the same section (spread) for each page.
-// No scaling logic here.
+// Ensure each section title appears at the top of the LEFT page.
+// Left page now shows the active section title + body; right pages keep their original templates
+// (so flipping reveals the next page content in sequence). No scaling logic here.
 
 const enterBtn = document.getElementById('enterBtn');
 const sketchbook = document.getElementById('sketchbook');
@@ -12,7 +13,7 @@ const nextBtn = document.getElementById('nextBtn');
 const prevBtn = document.getElementById('prevBtn');
 const controls = document.querySelector('.controls');
 
-// Section titles (must match order of right .page elements)
+// Section titles (must match the order of the right .page elements)
 const PAGE_TITLES = [
   'Home',
   'About Me',
@@ -22,14 +23,14 @@ const PAGE_TITLES = [
   'Demo Reel'
 ];
 
-// Capture original templates from the right-side pages so we can re-apply them later.
-// We store the HTML of each page's .page-content as a template.
+// Capture original right-page templates (the HTML inside each .page-content)
+// We will NOT overwrite these during sync; we only use them as canonical per-page templates.
 const pageTemplates = pages.map(p => {
   const content = p.querySelector('.page-content');
   return content ? content.innerHTML : '';
 });
 
-// Utility: ensure left has a dedicated slot for section content so we don't clobber nav.
+// Ensure left has a dedicated slot for the section content so the nav/hint remain intact.
 function ensureLeftSlot() {
   if (!leftPage) return null;
   const container = leftPage.querySelector('.page-content');
@@ -38,68 +39,66 @@ function ensureLeftSlot() {
   if (!slot) {
     slot = document.createElement('div');
     slot.className = 'left-page-section';
-    // Insert the slot after the nav if present, otherwise append
+    // Insert the slot before the nav if present so the title appears at the very top.
     const nav = container.querySelector('.left-nav');
     if (nav && nav.parentNode === container) {
-      nav.insertAdjacentElement('afterend', slot);
+      nav.insertAdjacentElement('beforebegin', slot);
     } else {
-      container.appendChild(slot);
+      // otherwise put it at the top
+      container.insertAdjacentElement('afterbegin', slot);
     }
   }
   return slot;
 }
 const leftSlot = ensureLeftSlot();
 
-// Apply the template content for a given index to both left and right sides
-function syncSpread(index) {
-  const i = Math.max(0, Math.min(index, pageTemplates.length - 1));
-  const html = pageTemplates[i] || `<h2>${PAGE_TITLES[i] || `Page ${i+1}`}</h2><div class="content-inner"></div>`;
-
-  // Set left slot content (keeps nav & hint intact in left .page-content)
-  if (leftSlot) {
-    leftSlot.innerHTML = html;
-  }
-
-  // Apply to every right page .page-content so the right pages visually match the active spread
-  pages.forEach((p) => {
-    const c = p.querySelector('.page-content');
-    if (c) {
-      c.innerHTML = html;
-    }
-  });
-
-  // Also ensure headings reflect the title list (defensive)
-  pages.forEach((p, idx) => {
-    const h2 = p.querySelector('h2');
-    if (h2) h2.textContent = PAGE_TITLES[i] || PAGE_TITLES[idx] || h2.textContent;
-  });
+// Helper: remove a leading H2 from a template HTML string so we don't duplicate titles
+function stripLeadingH2(html) {
+  const temp = document.createElement('div');
+  temp.innerHTML = html || '';
+  const firstH2 = temp.querySelector('h2');
+  if (firstH2) firstH2.remove();
+  return temp.innerHTML;
 }
 
-// ---------- Initial view: show only cover ----------
-function applyBackgroundsAndInitialState() {
-  // Keep existing background logic elsewhere (CSS/HTML or previous script).
-  // We only prepare content and visibility here.
-  syncSpread(0);
+// Set the left-page slot content to the active section with the H2 at top.
+// We don't overwrite the right-page templates (they should already be the per-page content).
+function syncLeftForIndex(index) {
+  const i = Math.max(0, Math.min(index, pageTemplates.length - 1));
+  const templateHtml = pageTemplates[i] || '';
+  const bodyHtml = stripLeadingH2(templateHtml);
+  const leftHtml = `<h2>${PAGE_TITLES[i] || `Page ${i+1}`}</h2>` + bodyHtml;
+  if (leftSlot) leftSlot.innerHTML = leftHtml;
+  // For safety, also ensure the active right page's H2 matches the canonical title
+  const activeRight = pages[i];
+  if (activeRight) {
+    const h2 = activeRight.querySelector('h2');
+    if (h2) h2.textContent = PAGE_TITLES[i] || h2.textContent;
+  }
+}
 
-  // Set cover title
+// ---------- initial view: only cover visible ----------
+function setInitialView() {
+  // Make sure left shows page 0 title and right pages remain as authored
+  syncLeftForIndex(0);
+
+  // Cover title
   const coverTitle = cover.querySelector('.cover-title');
   if (coverTitle) coverTitle.textContent = "Brett's Portfolio";
 
-  // Hide left & pages & controls until Enter is clicked
   if (leftPage) leftPage.style.display = 'none';
   if (pagesContainer) pagesContainer.style.display = 'none';
   if (controls) controls.style.display = 'none';
 
-  // Reset transforms and stacking
   cover.style.transform = 'rotateY(0deg)';
   pages.forEach((p, i) => {
     p.style.transform = 'rotateY(0deg)';
     p.style.zIndex = (100 - i);
   });
 }
-applyBackgroundsAndInitialState();
+setInitialView();
 
-// Create compact page menu (unchanged pattern)
+// Create compact menu (unchanged)
 function createPageMenu() {
   const existing = document.getElementById('pageMenu');
   if (existing) existing.remove();
@@ -129,8 +128,8 @@ function createPageMenu() {
     if (!isNaN(target)) {
       await openAndReveal();
       await goToPage(target);
-      // After navigation completes, ensure both halves show the final spread
-      syncSpread(current);
+      // after navigation, sync left page to current
+      syncLeftForIndex(current);
     }
   });
 
@@ -144,7 +143,7 @@ function createPageMenu() {
 }
 createPageMenu();
 
-// ---------- Open / Close animations ----------
+// ---------- open/close animations ----------
 async function openAndReveal() {
   if (sketchbook.classList.contains('open')) {
     if (controls) controls.style.display = 'flex';
@@ -153,7 +152,6 @@ async function openAndReveal() {
     return;
   }
 
-  // make pages visible behind cover (hidden initially)
   if (leftPage) { leftPage.style.display = 'block'; leftPage.style.opacity = '0'; }
   if (pagesContainer) { pagesContainer.style.display = 'block'; pagesContainer.style.opacity = '0'; }
   if (controls) controls.style.display = 'none';
@@ -171,18 +169,18 @@ async function openAndReveal() {
     }
   });
 
-  // rotate cover and fade in pages
   tl.to(cover, { duration: 1.0, rotationY: -160, transformOrigin: "left center", ease: "power3.out" }, 0);
   tl.to([leftPage, pagesContainer], { duration: 0.6, opacity: 1, ease: "power2.out" }, 0.1);
 
-  // ensure the spread shows the current index content when revealed
-  syncSpread(current);
+  // Ensure left shows the current spread title/content when revealed
+  syncLeftForIndex(current);
 
   await new Promise(res => setTimeout(res, 1100));
 }
 
 function closeAndHide() {
   if (!sketchbook.classList.contains('open')) return;
+
   if (controls) controls.style.display = 'none';
 
   const tl = gsap.timeline({
@@ -199,7 +197,7 @@ function closeAndHide() {
   tl.to(cover, { duration: 0.9, rotationY: 0, transformOrigin: "left center", ease: "power2.in" }, 0.05);
 }
 
-// Hook Enter button to open/close
+// Hook Enter button
 enterBtn.addEventListener('click', async () => {
   if (!sketchbook.classList.contains('open')) {
     await openAndReveal();
@@ -208,7 +206,7 @@ enterBtn.addEventListener('click', async () => {
   }
 });
 
-// ---------- Page flip logic (flips right pages but content is synced) ----------
+// ---------- page flip logic ----------
 let current = 0;
 const maxIndex = pages.length - 1;
 let flipping = false;
@@ -227,7 +225,6 @@ function flipPage(index, direction = 'forward') {
     const page = pages[index];
     const tl = gsap.timeline({
       onComplete: () => {
-        // housekeeping stacking order after flip
         if (direction === 'forward') {
           page.style.transform = 'rotateY(0deg)';
           page.style.zIndex = 10 + index;
@@ -250,7 +247,7 @@ function flipPage(index, direction = 'forward') {
   });
 }
 
-// Next / Prev buttons: flip then sync spread so both halves match
+// Next / Prev: flip and then update left slot to the new active section
 nextBtn.addEventListener('click', async () => {
   if (flipping) return;
   await openAndReveal();
@@ -258,8 +255,7 @@ nextBtn.addEventListener('click', async () => {
   flipping = true;
   await flipPage(current, 'forward');
   current++;
-  // After updating current, sync both halves to the new active section
-  syncSpread(current);
+  syncLeftForIndex(current);
   flipping = false;
 });
 
@@ -270,12 +266,11 @@ prevBtn.addEventListener('click', async () => {
   flipping = true;
   current--;
   await flipPage(current, 'backward');
-  // After moving back, sync both halves
-  syncSpread(current);
+  syncLeftForIndex(current);
   flipping = false;
 });
 
-// goToPage flips sequentially; we only update the visible content after navigation completes
+// goToPage: sequential flips, then sync left slot
 async function goToPage(target) {
   if (!sketchbook.classList.contains('open')) {
     await openAndReveal();
@@ -292,7 +287,7 @@ async function goToPage(target) {
       await flipPage(current, 'backward');
     }
   }
-  syncSpread(current);
+  syncLeftForIndex(current);
 }
 
 // Keyboard shortcuts
