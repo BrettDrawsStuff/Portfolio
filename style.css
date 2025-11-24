@@ -1,124 +1,176 @@
-/* Styles for the sketchbook — closed-cover centered & title/button in Carrotflower font */
+/* style.css
+   Full replacement stylesheet for the sketchbook portfolio
+   - No JS scaling; layout done with CSS so the cover can be centered while closed.
+   - Uses assets/bookcover.jpg, assets/leftpage.png, assets/rightpage.png as CSS backgrounds.
+   - Ensures full-page spread behavior, readable fonts, and consistent button/menu typography.
+*/
 
-/* Typekit Carrotflower loaded in index.html. Fallback to Amatic SC if missing. */
+/* Typekit Carrotflower is loaded from index.html. Fallback to Amatic SC if unavailable. */
 :root{
-  --paper:#fbf7ef;
-  --edge:#d8cbb9;
-  --ink:#1b1b1b;
-  --spine: 12px;
+  --paper: #fbf7ef;
+  --edge: #d8cbb9;
+  --ink: #1b1b1b;
+  --spine: 12px;         /* visual gutter between left & right */
+  --max-width: 1100px;   /* design width constraint */
+  --max-height: 760px;   /* design height constraint */
 }
 
-/* Reset */
-html,body,#app{height:100%;margin:0;font-family:"Carrotflower","Amatic SC",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue"; -webkit-font-smoothing:antialiased; background:var(--paper); overflow:hidden;}
-.paper-bg{position:fixed;inset:0;z-index:-1;background:
-    linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 40%),
-    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"><rect fill="%23fbf7ef" width="100%" height="100%"/></svg>');}
+/* Base reset and stage */
+* { box-sizing: border-box; }
+html,body,#app { height:100%; margin:0; background:var(--paper); -webkit-font-smoothing:antialiased; }
+body {
+  font-family: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue";
+  color: var(--ink);
+  overflow: hidden; /* keep the sketchbook app-like */
+}
 
-/* Sketchbook container — fixed, centered box (no JS scaling) */
-.sketchbook{
-  width: min(1100px, 96vw);
-  height: min(760px, 88vh);
-  margin: calc((100vh - min(760px, 88vh)) / 2) auto;
+/* soft paper texture background */
+.paper-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 40%),
+    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"><rect fill="%23fbf7ef" width="100%" height="100%"/></svg>');
+}
+
+/* Sketchbook container: centered fixed-size box (responsive within viewport)
+   No scaling performed by JS. It will remain visually centered for the closed cover. */
+.sketchbook {
+  width: min(var(--max-width), 96vw);
+  height: min(var(--max-height), 88vh);
+  margin: calc((100vh - min(var(--max-height), 88vh)) / 2) auto;
   position: relative;
   transform-style: preserve-3d;
-  box-sizing: border-box;
   overflow: visible;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-/* left half (static) */
-.left-page{
-  position:absolute;
-  left:0;
-  top:0;
-  bottom:0;
+/* LEFT PAGE (content slot) */
+.left-page {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
   width: calc(50% - (var(--spine) / 2));
-  padding:28px;
-  background:var(--paper);
-  border-left:6px solid rgba(0,0,0,0.03);
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-  z-index:20;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  z-index: 20;
 
+  /* background image for left page */
+  background-image: url("assets/leftpage.png");
+  background-size: contain;       /* show full image, keep aspect */
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: rgba(251,247,239,0.95); /* fallback paper color if aspect differs */
+  border-left: 6px solid rgba(0,0,0,0.03);
+}
+
+/* Small helper slot inserted by JS (.left-page-section).
+   Ensure H2 (title) sits at very top and is visually consistent. */
+.left-page .left-page-section {
+  width: 100%;
+}
+.left-page .left-page-section h2 {
+  margin: 0 0 12px 0;
+  font-size: 28px;
+  font-family: "Carrotflower", "Amatic SC", sans-serif;
+  line-height: 1.05;
+}
+
+/* The pages container (right half) */
+.pages {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: calc(50% - (var(--spine) / 2));
+  transform-style: preserve-3d;
+  z-index: 30;
+}
+
+/* Each right-hand page and the cover share base styles.
+   We use CSS backgrounds for rightpage and cover; JS will handle flipping transforms. */
+.page, .cover {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: 28px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  box-sizing: border-box;
+  border: 2px solid var(--edge);
+  border-right: 6px solid rgba(0,0,0,0.02);
+  box-shadow: 0 24px 60px rgba(17,17,17,0.18);
+  backface-visibility: hidden;
+  transform-origin: left center;
+  background-color: rgba(251,247,239,0.95); /* fallback */
+}
+
+/* Apply the rightpage background to each page (default for all right pages) */
+.pages .page {
+  background-image: url("assets/rightpage.png");
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
-  background-color: rgba(251,247,239,0.95);
 }
 
-/* pages container (right half) */
-.pages{
-  position:absolute;
-  right:0;
-  top:0;
-  bottom:0;
-  width: calc(50% - (var(--spine) / 2));
-  transform-style:preserve-3d;
-  z-index:30;
-}
-
-/* page base (right pages and cover) */
-.page, .cover {
-  position:absolute;
-  top:0; bottom:0;
-  width:100%;
-  height:100%;
-  background:transparent;
-  box-shadow: 0 24px 60px rgba(17,17,17,0.18);
-  border: 2px solid var(--edge);
-  overflow:hidden;
-  transform-origin:left center;
-  backface-visibility:hidden;
-  border-right:6px solid rgba(0,0,0,0.02);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:28px;
-  box-sizing:border-box;
-}
-
-/* COVER SPECIFICS
-   - When the sketchbook is in closed state (no .open class), place the cover centered
-     and give it the same width as the left page so it looks like a closed book.
-   - When the sketchbook has .open, the cover should sit on the right half and rotate
-     open via existing JS (rotation handled by GSAP). */
+/* COVER specifics:
+   - When the sketchbook is closed (no .open), the cover will be centered and sized like the left page,
+     giving the visual of a closed book.
+   - When the sketchbook has .open, the cover will sit on the right half and be rotated by JS. */
 .cover {
   z-index: 200;
-  right: 0; /* default position when open */
+  /* by default position on right half; JS transitions this when toggling .open */
+  right: 0;
   left: auto;
   width: calc(50% - (var(--spine) / 2));
+  background-image: url("assets/bookcover.jpg");
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
-  display:flex;
-  align-items:center;
-  justify-content:center;
   transition: all 320ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* closed: center the cover and make it the same width as left page */
+/* CLOSED cover centered: position the cover in the center of the sketchbook,
+   give it same visual width as the left page so it looks like a single closed book. */
 .sketchbook:not(.open) .cover {
   left: 50%;
   right: auto;
   transform: translateX(-50%) rotateY(0deg) !important;
-  /* width is already set to half; placing at center makes it look like a closed book */
   box-shadow: 0 30px 70px rgba(17,17,17,0.28);
 }
 
-/* open: cover sits on the right half (JS rotates it) */
+/* When open, cover returns to right side; JS governs rotation */
 .sketchbook.open .cover {
   left: auto;
   right: 0;
-  transform: rotateY(-160deg);
 }
 
-/* cover-art overlay: center title and enter button on top of the cover image */
+/* If you have inserted <img> fallbacks in the DOM, hide them so they don't duplicate the CSS background */
+.cover-img, .left-bg-img, .right-bg-img {
+  display: none !important;
+}
+
+/* Cover artwork overlay (title + subtitle + button) */
 .cover-art {
-  position: relative;
-  z-index: 60;
   text-align: center;
-  color: var(--ink);
-  pointer-events: none; /* allow clicks to pass to the button which will re-enable pointer-events there */
+  z-index: 60;
+  pointer-events: none; /* make the overlay passive; button will re-enable pointer-events */
+  width: 100%;
+  max-width: calc(50% - (var(--spine) / 2) - 56px); /* keep overlay constrained inside cover */
 }
 .cover-art .cover-title {
   margin: 0;
@@ -133,10 +185,10 @@ html,body,#app{height:100%;margin:0;font-family:"Carrotflower","Amatic SC",syste
   pointer-events: none;
 }
 
-/* Enter button styling — ensure it uses Carrotflower and is clickable */
+/* Enter button */
 .enter-btn {
   pointer-events: auto;
-  display:inline-block;
+  display: inline-block;
   margin-top: 6px;
   padding: 10px 18px;
   background: rgba(255,255,255,0.95);
@@ -149,49 +201,49 @@ html,body,#app{height:100%;margin:0;font-family:"Carrotflower","Amatic SC",syste
   box-shadow: 0 6px 10px rgba(0,0,0,0.08);
 }
 
-/* ensure all buttons and selects use Carrotflower for consistency */
-button, select, .nav-item {
-  font-family: "Carrotflower", "Amatic SC", sans-serif;
-  -webkit-font-smoothing:antialiased;
+/* Page content region sits above backgrounds */
+.page-content {
+  z-index: 80;
+  width: 100%;
+  color: var(--ink);
+  background: transparent;
+  font-size: 18px;
 }
 
-/* page content and headings */
-.page-content {
-  width:100%;
-  color:var(--ink);
-  background:transparent;
-  font-size:18px;
-  box-sizing:border-box;
-  z-index:80; /* content should sit above any fallback <img> if present */
-}
+/* Right-page H2 style */
 .page-content h2 {
   margin: 0 0 12px 0;
-  font-size:26px;
-  font-weight:700;
-  font-family:"Carrotflower", "Amatic SC", sans-serif;
-}
-
-/* controls centered at bottom */
-.controls {
-  position:absolute;
-  left:50%;
-  transform:translateX(-50%);
-  bottom:18px;
-  display:flex;
-  gap:12px;
-  z-index:500;
-}
-.controls button {
-  background:var(--paper);
-  border:2px solid #cbb79f;
-  padding:8px 12px;
-  border-radius:6px;
-  font-size:18px;
-  cursor:pointer;
+  font-size: 26px;
+  font-weight: 700;
   font-family: "Carrotflower", "Amatic SC", sans-serif;
 }
 
-/* spine gutter */
+/* Left nav/buttons/menu typography */
+button, select, .nav-item {
+  font-family: "Carrotflower", "Amatic SC", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Bottom arrow controls */
+.controls {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 18px;
+  display: flex;
+  gap: 12px;
+  z-index: 500;
+}
+.controls button {
+  background: var(--paper);
+  border: 2px solid #cbb79f;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+/* Visual central spine gutter */
 .sketchbook::before {
   content: "";
   position: absolute;
@@ -201,14 +253,17 @@ button, select, .nav-item {
   height: 100%;
   pointer-events: none;
   background: linear-gradient(90deg, rgba(0,0,0,0.04), rgba(0,0,0,0.02) 40%, rgba(0,0,0,0.00));
-  z-index:40;
+  z-index: 40;
 }
 
-/* responsive tweaks */
-@media (max-width:640px) {
-  .sketchbook{ width: calc(100vw - 20px); height: calc(100vh - 20px); margin:10px auto; }
+/* Small screens adjustments */
+@media (max-width: 640px) {
+  :root { --max-width: calc(100vw - 20px); --max-height: calc(100vh - 20px); }
+  .sketchbook { width: calc(100vw - 20px); height: calc(100vh - 20px); margin: 10px auto; }
+  .left-page { padding: 18px; }
+  .page, .cover { padding: 18px; }
+  .page-content { font-size: 15px; }
+  .page-content h2 { font-size: 20px; }
   .cover-art .cover-title { font-size: 22px; }
   .enter-btn { font-size: 16px; padding: 8px 12px; }
-  .page-content { font-size:15px; }
-  .page-content h2 { font-size:18px; }
 }
