@@ -18,19 +18,13 @@
     <div class="paper-bg" aria-hidden="true"></div>
 
     <div class="sketchbook closed" id="sketchbook" role="application" aria-label="Sketchbook portfolio">
-      <!-- left inside (stationary) with nav -->
+      <!-- left inside (stationary). Removed the left-page nav buttons and instructions as requested -->
       <div class="page left-page" id="left">
         <div class="page-content">
           <h3 class="site-title">BrettDrawsStuff</h3>
-          <nav class="left-nav" aria-label="Site sections">
-            <button class="nav-item" data-target="0">Home</button>
-            <button class="nav-item" data-target="1">About Me</button>
-            <button class="nav-item" data-target="2">Digital Art</button>
-            <button class="nav-item" data-target="3">Animations/GIFs</button>
-            <button class="nav-item" data-target="4">Sketchbook</button>
-            <button class="nav-item" data-target="5">Demo Reel</button>
-          </nav>
-          <p class="hint">Use ← → or the buttons to turn pages. Press Enter to open the cover.</p>
+
+          <!-- left-page-section is where the active section title + content will be injected -->
+          <div class="left-page-section" aria-live="polite"></div>
         </div>
       </div>
 
@@ -82,7 +76,6 @@
 
       <!-- cover -->
       <div class="page cover" id="cover" role="button" aria-pressed="false">
-        <!-- cover background is handled via CSS (and script sets background as well). -->
         <div class="cover-art">
           <h1 class="cover-title">Brett's Portfolio</h1>
           <p class="subtitle">a well-used sketchbook</p>
