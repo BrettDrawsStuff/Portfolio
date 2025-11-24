@@ -1,49 +1,92 @@
 /* style.css
-   Change: When the book is open, hide the visible framed left/right page elements
-   (borders, shadows, backgrounds) and the central spine so the open-background
-   (the "back layer") is the only visible page surface. The DOM stays in place
-   so animations and accessibility still work, but visual chrome is removed.
+   Simplified open state: when the book is open we remove the left/right framed panels
+   and show only backgroundpaper.png as the full spread background. Controls and menu
+   remain visible. This file replaces/merges with your existing stylesheet.
 */
 
-/* --- existing variables and base rules above (kept as before) --- */
-/* (This file is intended to replace or be merged into your current style.css.
-   The new rules below target the open state visuals.) */
+/* Typekit Carrotflower is loaded in index.html. Fallback to Amatic SC if missing. */
+:root{
+  --paper: #fbf7ef;
+  --edge: #d8cbb9;
+  --ink: #1b1b1b;
+  --spine: 12px;
+  --page-padding: 28px;
+  --gutter: 20px;
+  --open-bg-url: url("assets/backgroundpaper.png"); /* the new single open-background */
+}
 
-/* Remove the framed page chrome when book is open so only the open background shows */
+/* Basic reset */
+* { box-sizing: border-box; }
+html, body, #app { height:100%; margin:0; background:var(--paper); -webkit-font-smoothing:antialiased; }
+body {
+  font-family: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue";
+  color: var(--ink);
+  overflow-y: auto;
+}
+
+/* full-bleed stage */
+.paper-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 40%),
+    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"><rect fill="%23fbf7ef" width="100%" height="100%"/></svg>');
+}
+
+/* sketchbook stage: full width */
+.sketchbook {
+  width: 100%;
+  min-height: calc(100vh - (var(--gutter) * 2));
+  padding: var(--gutter);
+  position: relative;
+  transform-style: preserve-3d;
+  overflow: visible;
+  user-select: none;
+  --open-bg-url: var(--open-bg-url);
+}
+
+/* OPEN STATE: full-spread background using backgroundpaper.png
+   rendered with a pseudo-element so it always sits behind UI chrome (menu, arrows).
+*/
+.sketchbook.open::before {
+  content: "";
+  position: absolute;
+  top: var(--gutter);
+  left: var(--gutter);
+  right: var(--gutter);
+  bottom: var(--gutter);
+  z-index: 6;
+  background: var(--open-bg-url) center/cover no-repeat;
+  pointer-events: none;
+  border-radius: 0;
+}
+
+/* LEFT PAGE / RIGHT PAGES / COVER: kept in DOM but visually removed in open state.
+   This removes the framed window appearance and redundant inner title/heading windows. */
 .sketchbook.open .left-page,
 .sketchbook.open .pages,
 .sketchbook.open .pages .page,
 .sketchbook.open .cover {
-  /* visually remove backgrounds/borders/shadows */
   background-image: none !important;
   background-color: transparent !important;
   border: none !important;
   box-shadow: none !important;
-
-  /* make the panels invisible but keep them in DOM for flipping logic */
   opacity: 0 !important;
+  pointer-events: none !important;
+  transform: none !important;
+}
+
+/* Ensure any content boxes do not create visible white blocks */
+.sketchbook.open .page-content,
+.sketchbook.open .left-page-section {
+  background: transparent !important;
+  color: inherit !important;
+  opacity: 0 !important; /* hide redundant textual UI that was overlapping */
   pointer-events: none !important;
 }
 
-/* Ensure page content doesn't leave any white/colored blocks */
-.sketchbook.open .page-content {
-  background: transparent !important;
-  color: inherit;
-}
-
-/* Hide the spine/gutter in open state so there's no visible dividing line */
-.sketchbook.open::after,
-.sketchbook.open::before { /* if you used ::before for spine earlier, hide both */
-  display: none !important;
-}
-
-/* Make sure the open background pseudo-element remains visible above the page backgrounds */
-.sketchbook.open::before {
-  /* keep existing open-background rules (center/cover) */
-  z-index: 6; /* sits below controls and cover overlay */
-}
-
-/* Keep controls and top menu interactive and visible above the open background */
+/* Keep menu, controls, and cover overlay visible and interactive above the open background */
 .sketchbook.open #pageMenu,
 .sketchbook.open .controls,
 .sketchbook.open .cover-art {
@@ -52,19 +95,44 @@
   z-index: 1000 !important;
 }
 
-/* Small-screen exception: if you have stacking behavior on narrow viewports,
-   don't hide panels completely so content remains readable — instead reduce
-   chrome but keep content visible. */
+/* SMALL SCREENS: keep panels visible (stacked) for readability */
 @media (max-width: 560px) {
   .sketchbook.open .left-page,
   .sketchbook.open .pages,
-  .sketchbook.open .pages .page,
   .sketchbook.open .cover {
     opacity: 1 !important;
     pointer-events: auto !important;
-    /* keep minimal borders for readability on narrow screens */
+    background-color: rgba(251,247,239,0.95) !important;
     border: 1px solid rgba(0,0,0,0.06) !important;
     box-shadow: 0 8px 18px rgba(17,17,17,0.08) !important;
-    background-color: rgba(251,247,239,0.95) !important;
   }
+  .sketchbook.open::before { display: none !important; } /* don't force full-spread on tiny screens */
 }
+
+/* Controls/menu/button typography restored to Carrotflower */
+button, select, .nav-item {
+  font-family: "Carrotflower", "Amatic SC", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Keep controls visible and on top */
+.controls {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--gutter) / 2);
+  display: flex;
+  gap: 12px;
+  z-index: 1200;
+}
+.controls button {
+  background: var(--paper);
+  border: 2px solid #cbb79f;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+/* Misc: ensure no spine or gutter is visible when open */
+.sketchbook.open::after { display: none !important; }
