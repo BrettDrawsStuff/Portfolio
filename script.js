@@ -1,10 +1,9 @@
 // script.js
-// Updated script to:
-// - Keep no scaling behavior
-// - Center the cover on closed state (CSS) and open into spread (GSAP animation)
-// - Ensure left + right spread behavior: left page shows the active section title and content slot,
-//   right pages remain the sequence that flips; after navigation the left page is synced.
-// - Apply inline background-image fallbacks for cover/left/right in case CSS is overridden.
+// Updated to ensure cover background is applied reliably by:
+// 1) injecting --cover-url CSS variable on the .cover element once the image loads
+// 2) leaving the CSS ::before rule to render the cover image (so cover-art cannot obscure it)
+//
+// Also keeps previous behavior: left/right sync, flipping, menu, and inline background fallbacks.
 
 const enterBtn = document.getElementById('enterBtn');
 const sketchbook = document.getElementById('sketchbook');
@@ -21,7 +20,7 @@ const COVER_SRC = 'assets/bookcover.jpg';
 const LEFT_SRC = 'assets/leftpage.png';
 const RIGHT_SRC = 'assets/rightpage.png';
 
-// Section titles (must match order of right .page elements)
+// Section titles
 const PAGE_TITLES = [
   'Home',
   'About Me',
@@ -37,7 +36,7 @@ const pageTemplates = pages.map(p => {
   return content ? content.innerHTML : '';
 });
 
-// Ensure left has a dedicated content slot (.left-page-section) at the top (before nav)
+// Ensure left has a dedicated content slot at top
 function ensureLeftSlot() {
   if (!leftPage) return null;
   const container = leftPage.querySelector('.page-content');
@@ -57,7 +56,7 @@ function ensureLeftSlot() {
 }
 const leftSlot = ensureLeftSlot();
 
-// Remove leading h2 from a template HTML string to avoid duplicating titles on left
+// Strip the leading H2 from a template HTML string
 function stripLeadingH2(html) {
   const temp = document.createElement('div');
   temp.innerHTML = html || '';
@@ -66,15 +65,13 @@ function stripLeadingH2(html) {
   return temp.innerHTML;
 }
 
-// Sync left slot to show the current section title + content (title forced at top)
+// Sync left slot for index
 function syncLeftForIndex(index) {
   const i = Math.max(0, Math.min(index, pageTemplates.length - 1));
   const templateHtml = pageTemplates[i] || '';
   const bodyHtml = stripLeadingH2(templateHtml);
   const leftHtml = `<h2>${PAGE_TITLES[i] || `Page ${i+1}`}</h2>` + bodyHtml;
   if (leftSlot) leftSlot.innerHTML = leftHtml;
-
-  // For safety ensure the active right page's H2 text matches the canonical title
   const activeRight = pages[i];
   if (activeRight) {
     const h2 = activeRight.querySelector('h2');
@@ -82,14 +79,8 @@ function syncLeftForIndex(index) {
   }
 }
 
-// Apply inline backgrounds to ensure assets display even if a stylesheet was overridden
+// Apply inline backgrounds for left/right as fallback
 function applyInlineBackgrounds() {
-  if (cover) {
-    cover.style.backgroundImage = `url('${COVER_SRC}')`;
-    cover.style.backgroundSize = 'contain';
-    cover.style.backgroundPosition = 'center';
-    cover.style.backgroundRepeat = 'no-repeat';
-  }
   if (leftPage) {
     leftPage.style.backgroundImage = `url('${LEFT_SRC}')`;
     leftPage.style.backgroundSize = 'contain';
@@ -104,10 +95,32 @@ function applyInlineBackgrounds() {
   });
 }
 
-// initial: apply backgrounds, set left slot content (Home), hide pages until open
+// Ensure cover image loads, then inject CSS variable used by .cover::before
+function ensureCoverBackground() {
+  if (!cover) return;
+  const img = new Image();
+  img.onload = () => {
+    // set CSS variable on the cover element so ::before uses it
+    cover.style.setProperty('--cover-url', `url('${COVER_SRC}')`);
+    // also set inline background-image as an additional fallback
+    cover.style.backgroundImage = `url('${COVER_SRC}')`;
+    cover.style.backgroundSize = 'contain';
+    cover.style.backgroundPosition = 'center';
+    cover.style.backgroundRepeat = 'no-repeat';
+    console.log('Cover image loaded and applied:', COVER_SRC);
+  };
+  img.onerror = () => {
+    console.error('Failed to load cover image at', COVER_SRC);
+    // optional on-screen hint can be added here in development
+  };
+  img.src = COVER_SRC;
+}
+
+// initial view: apply backgrounds, sync left (home), hide pages until open
 function setInitialView() {
   applyInlineBackgrounds();
   syncLeftForIndex(0);
+  ensureCoverBackground();
 
   const coverTitle = cover.querySelector('.cover-title');
   if (coverTitle) coverTitle.textContent = "Brett's Portfolio";
@@ -124,7 +137,7 @@ function setInitialView() {
 }
 setInitialView();
 
-// Build compact menu (hamburger + select) in top-right
+// menu creation (hamburger + select)
 function createPageMenu() {
   const existing = document.getElementById('pageMenu');
   if (existing) existing.remove();
@@ -170,7 +183,7 @@ function createPageMenu() {
 }
 createPageMenu();
 
-// Open book animation: reveal left & right pages while rotating cover
+// open animation
 async function openAndReveal() {
   if (sketchbook.classList.contains('open')) {
     if (controls) controls.style.display = 'flex';
@@ -182,7 +195,7 @@ async function openAndReveal() {
   if (leftPage) { leftPage.style.display = 'block'; leftPage.style.opacity = '0'; }
   if (pagesContainer) { pagesContainer.style.display = 'block'; pagesContainer.style.opacity = '0'; }
   if (controls) controls.style.display = 'none';
-  void sketchbook.offsetWidth; // force reflow
+  void sketchbook.offsetWidth; // reflow
 
   const tl = gsap.timeline({
     onStart: () => {
@@ -199,13 +212,11 @@ async function openAndReveal() {
   tl.to(cover, { duration: 1.0, rotationY: -160, transformOrigin: "left center", ease: "power3.out" }, 0);
   tl.to([leftPage, pagesContainer], { duration: 0.6, opacity: 1, ease: "power2.out" }, 0.1);
 
-  // Ensure left shows the current section when revealed
   syncLeftForIndex(current);
-
   await new Promise(res => setTimeout(res, 1100));
 }
 
-// Close book: hide left/right and reset cover
+// close
 function closeAndHide() {
   if (!sketchbook.classList.contains('open')) return;
   if (controls) controls.style.display = 'none';
@@ -224,7 +235,7 @@ function closeAndHide() {
   tl.to(cover, { duration: 0.9, rotationY: 0, transformOrigin: "left center", ease: "power2.in" }, 0.05);
 }
 
-// Enter button toggles
+// Enter button
 enterBtn.addEventListener('click', async () => {
   if (!sketchbook.classList.contains('open')) {
     await openAndReveal();
@@ -233,7 +244,7 @@ enterBtn.addEventListener('click', async () => {
   }
 });
 
-// Page flip logic (right pages flip, left is synced)
+// page flip logic
 let current = 0;
 const maxIndex = pages.length - 1;
 let flipping = false;
@@ -274,7 +285,7 @@ function flipPage(index, direction = 'forward') {
   });
 }
 
-// Next / Prev handlers
+// next/prev handlers
 nextBtn.addEventListener('click', async () => {
   if (flipping) return;
   await openAndReveal();
@@ -297,7 +308,7 @@ prevBtn.addEventListener('click', async () => {
   flipping = false;
 });
 
-// Sequential navigation to a specific page
+// goToPage
 async function goToPage(target) {
   if (!sketchbook.classList.contains('open')) {
     await openAndReveal();
@@ -317,7 +328,7 @@ async function goToPage(target) {
   syncLeftForIndex(current);
 }
 
-// Keyboard controls
+// keyboard
 document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowRight') nextBtn.click();
   if (e.key === 'ArrowLeft') prevBtn.click();
@@ -330,7 +341,7 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// Ambient doodles (unchanged)
+// ambient doodles
 gsap.utils.toArray('.floating').forEach((el, i) => {
   gsap.to(el, {
     y: (i + 1) * 10,
@@ -343,8 +354,9 @@ gsap.utils.toArray('.floating').forEach((el, i) => {
   });
 });
 
-// After DOM load ensure inline backgrounds are applied and left slot is synced
+// ensure cover background is applied once page loads (additional safety)
 window.addEventListener('load', () => {
+  ensureCoverBackground();
   applyInlineBackgrounds();
   syncLeftForIndex(current);
 });
