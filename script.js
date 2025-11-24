@@ -14,8 +14,11 @@ const DESIGN_W = 1000;
 const DESIGN_H = 680;
 
 // Minimum scale to keep things readable on very small viewports.
-// Set to a smaller value if you want the book to shrink more on tiny phones.
-const MIN_SCALE = 0.5;
+const MIN_SCALE = 0.45;
+
+// Maximum scale limit (optional). Increase if you want the book to get very large on huge screens.
+// Set to Infinity to allow unlimited upscaling.
+const MAX_SCALE = Infinity;
 
 let current = 0;
 const maxIndex = pages.length - 1;
@@ -28,37 +31,62 @@ pages.forEach((p, i) => {
   p.style.transform = 'rotateY(0deg)';
 });
 
-// ----- Full-screen scaling helpers -----
+// Ensure the sketchbook is positioned in a way we can center it reliably when scaling.
+// We'll center with absolute positioning and use translate(-50%, -50%) with scale.
+sketchbook.style.position = 'absolute';
+sketchbook.style.left = '50%';
+sketchbook.style.top = '50%';
+sketchbook.style.transformOrigin = 'center center';
+
+// Prevent page scroll so the book behaves like a "full-screen" app
+// (user can still scroll if content inside pages overflows; tweak as needed)
+document.documentElement.style.overflow = 'hidden';
+document.body.style.overflow = 'hidden';
+
+// Debounce helper for resize events
+let resizeTimer = null;
+function scheduleApplyScale() {
+  if (resizeTimer) clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    applyScale();
+    resizeTimer = null;
+  }, 60);
+}
+
 // compute and apply scale so the design fits the viewport while preserving aspect
-// This clamps the final scale between MIN_SCALE and 1 (no upscaling).
+// This will scale the book to "contain" within the viewport and will allow upscaling
+// (unless MAX_SCALE is set). It centers the book and avoids it overflowing the screen.
 function applyScale() {
   const vw = Math.max(1, window.innerWidth);
   const vh = Math.max(1, window.innerHeight);
 
-  // Fit the design inside the viewport while preserving aspect ratio
+  // rawScale uses "contain" behavior so the whole design remains visible
   const rawScale = Math.min(vw / DESIGN_W, vh / DESIGN_H);
 
-  // Clamp so we never upscale beyond 1, and never drop below MIN_SCALE
-  const scale = Math.max(MIN_SCALE, Math.min(1, rawScale));
+  // clamp to the configured range
+  const scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, rawScale));
 
-  // Apply the scale about the center. Centering is handled by #app flexbox in CSS.
-  // This keeps the sketchbook visible and prevents the "too large" problem.
-  sketchbook.style.transform = `scale(${scale})`;
+  // We apply translate(-50%, -50%) to center and then scale.
+  // Using translate first keeps the book centered even when scaled.
+  sketchbook.style.transform = `translate(-50%, -50%) scale(${scale})`;
   sketchbook.style.transformOrigin = 'center center';
 }
 
-// Run applyScale on load and when the viewport changes.
-window.addEventListener('resize', applyScale);
+// init scale and update on resize/orientation changes
+window.addEventListener('resize', scheduleApplyScale);
 window.addEventListener('orientationchange', () => {
   // small timeout to allow orientation layout to settle
-  setTimeout(applyScale, 120);
+  setTimeout(() => {
+    applyScale();
+  }, 120);
 });
+
+// Ensure fonts and late layout changes don't push the book off-screen: run a couple times
 window.addEventListener('load', () => {
-  // Some fonts (Adobe Fonts) may change layout after load; run twice to be safe.
   applyScale();
   setTimeout(applyScale, 200);
 });
-applyScale(); // initial call (script is deferred so DOM is available)
+applyScale(); // initial call
 
 // helper to open the book (returns a Promise)
 function openBook() {
