@@ -9,6 +9,10 @@ const nextBtn = document.getElementById('nextBtn');
 const prevBtn = document.getElementById('prevBtn');
 const navItems = Array.from(document.querySelectorAll('.left-nav .nav-item'));
 
+// design dimensions must match the CSS --design-w/--design-h values
+const DESIGN_W = 1000;
+const DESIGN_H = 680;
+
 let current = 0;
 const maxIndex = pages.length - 1;
 let flipping = false;
@@ -19,6 +23,27 @@ pages.forEach((p, i) => {
   p.style.transformOrigin = 'left center';
   p.style.transform = 'rotateY(0deg)';
 });
+
+// ----- Full-screen scaling helpers -----
+// compute and apply scale so the design fits the viewport while preserving aspect
+function applyScale() {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const scale = Math.min(vw / DESIGN_W, vh / DESIGN_H);
+  // set transform to scale about center; keep any existing transforms managed by animations unaffected
+  // we apply scale at the sketchbook level
+  sketchbook.style.transform = `scale(${scale})`;
+  // adjust transform-origin to center (should already be center center)
+  sketchbook.style.transformOrigin = 'center center';
+}
+
+// init scale and update on resize
+window.addEventListener('resize', applyScale);
+window.addEventListener('orientationchange', () => {
+  // small timeout to allow orientation layout to settle
+  setTimeout(applyScale, 120);
+});
+applyScale(); // initial call
 
 // helper to open the book (returns a Promise)
 function openBook() {
