@@ -1,4 +1,5 @@
 // Sketchbook prototype script (uses GSAP)
+// No scaling: removed any viewport scaling logic so the layout remains predictable.
 // script.js is deferred in index.html, so DOM is available
 
 const enterBtn = document.getElementById('enterBtn');
@@ -11,7 +12,7 @@ const nextBtn = document.getElementById('nextBtn');
 const prevBtn = document.getElementById('prevBtn');
 const controls = document.querySelector('.controls');
 
-// Page names in order (must match the DOM order)
+// Page titles in order (must match the order of .pages .page elements)
 const PAGE_TITLES = [
   'Home',
   'About Me',
@@ -27,50 +28,54 @@ pages.forEach((p, i) => {
   if (h2) h2.textContent = PAGE_TITLES[i] || `Page ${i + 1}`;
 });
 
-// Use the provided images as backgrounds (assumes assets/ folder at repo root)
+// Apply provided images as backgrounds (expects assets/bookcover.jpg, assets/leftpage.png, assets/rightpage.png)
 function applyBackgrounds() {
   // Cover image
   cover.style.backgroundImage = "url('assets/bookcover.jpg')";
   cover.style.backgroundSize = 'cover';
   cover.style.backgroundPosition = 'center';
   cover.style.backgroundRepeat = 'no-repeat';
-  cover.querySelector('.cover-art').style.background = 'transparent'; // let the image show
+  // Make cover's inner art area transparent so the image shows through
+  const coverArt = cover.querySelector('.cover-art');
+  if (coverArt) coverArt.style.background = 'transparent';
 
-  // Left side background for the whole left panel
-  leftPage.style.backgroundImage = "url('assets/leftpage.png')";
-  leftPage.style.backgroundSize = 'cover';
-  leftPage.style.backgroundPosition = 'center';
-  leftPage.style.backgroundRepeat = 'no-repeat';
+  // Left side background
+  if (leftPage) {
+    leftPage.style.backgroundImage = "url('assets/leftpage.png')";
+    leftPage.style.backgroundSize = 'cover';
+    leftPage.style.backgroundPosition = 'center';
+    leftPage.style.backgroundRepeat = 'no-repeat';
+  }
 
-  // Right side image used as background for each right-page
+  // Right side / content page background (use same rightpage.png for every right page)
   pages.forEach(p => {
     p.style.backgroundImage = "url('assets/rightpage.png')";
     p.style.backgroundSize = 'cover';
     p.style.backgroundPosition = 'center';
     p.style.backgroundRepeat = 'no-repeat';
-    // Ensure page content sits on top; make content background semi-transparent if needed
+    // let the page-content be transparent so the background shows
     const content = p.querySelector('.page-content');
     if (content) {
-      content.style.background = 'rgba(255,255,255,0.0)'; // transparent so the paper shows
-      content.style.backdropFilter = 'none';
+      content.style.background = 'transparent';
+      content.style.color = '#111'; // keep readable text
     }
   });
 }
 
-// Initial state: show only the cover (hide left side, pages and controls)
+// Initial: only show the cover (hide left and pages and controls)
 function setInitialView() {
   applyBackgrounds();
 
-  // Ensure cover title text as requested
+  // Cover title override per your request
   const coverTitle = cover.querySelector('.cover-title');
   if (coverTitle) coverTitle.textContent = "Brett's Portfolio";
 
-  // Hide left and pages until we "enter" the book
-  leftPage.style.display = 'none';
-  pagesContainer.style.display = 'none';
-  controls.style.display = 'none';
+  // Hide left and right pages until Enter
+  if (leftPage) leftPage.style.display = 'none';
+  if (pagesContainer) pagesContainer.style.display = 'none';
+  if (controls) controls.style.display = 'none';
 
-  // Make sure cover is front and reset transforms
+  // Ensure cover is reset visually
   cover.style.zIndex = 200;
   cover.style.transform = 'rotateY(0deg)';
   pages.forEach((p, i) => {
@@ -80,15 +85,14 @@ function setInitialView() {
 }
 setInitialView();
 
-// Create a compact dropdown menu in the top-right of the sketchbook
+// Create a compact dropdown menu placed top-right inside the sketchbook
 function createPageMenu() {
-  // If a menu already exists remove it first
+  // Remove previous if present
   const existing = document.getElementById('pageMenu');
   if (existing) existing.remove();
 
   const menu = document.createElement('div');
   menu.id = 'pageMenu';
-  // Inline styles so it works without editing CSS file
   Object.assign(menu.style, {
     position: 'absolute',
     top: '12px',
@@ -97,10 +101,10 @@ function createPageMenu() {
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
-    fontFamily: 'inherit'
+    fontFamily: 'inherit',
+    pointerEvents: 'auto'
   });
 
-  // Button (hamburger / label)
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.title = 'Menu';
@@ -110,18 +114,18 @@ function createPageMenu() {
     padding: '6px 8px',
     borderRadius: '6px',
     border: '2px solid rgba(0,0,0,0.12)',
-    background: 'rgba(255,255,255,0.85)',
+    background: 'rgba(255,255,255,0.9)',
     cursor: 'pointer'
   });
 
-  // Select dropdown to jump to pages
   const select = document.createElement('select');
   select.id = 'pageSelect';
   Object.assign(select.style, {
     padding: '6px 8px',
     borderRadius: '6px',
     border: '2px solid rgba(0,0,0,0.12)',
-    background: 'rgba(255,255,255,0.95)'
+    background: 'rgba(255,255,255,0.95)',
+    display: 'none' // start hidden
   });
 
   PAGE_TITLES.forEach((title, idx) => {
@@ -131,86 +135,84 @@ function createPageMenu() {
     select.appendChild(opt);
   });
 
-  // When the select changes, navigate to the page (auto-open book first)
-  select.addEventListener('change', async (e) => {
+  // Jump to page when selection changes
+  select.addEventListener('change', async () => {
     const target = Number(select.value);
     if (isNaN(target)) return;
     await openAndReveal();
     await goToPage(target);
   });
 
-  // Toggle select visibility when pressing the button (compact UI)
+  // Toggle the select (compact UI)
   btn.addEventListener('click', () => {
-    // toggle display
     select.style.display = (select.style.display === 'none' || !select.style.display) ? 'inline-block' : 'none';
   });
 
-  // Start with select hidden to minimize distraction
-  select.style.display = 'none';
-
   menu.appendChild(btn);
   menu.appendChild(select);
+  // append to sketchbook so it sits above the book
   sketchbook.appendChild(menu);
 }
 createPageMenu();
 
-// Helpers to reveal/hide book pages around the cover animation.
-// We show left and right pages during the cover opening so it looks natural.
+// Reveal/hide logic when opening/closing the book
 async function openAndReveal() {
   if (sketchbook.classList.contains('open')) {
-    // already open; ensure controls visible
-    controls.style.display = 'flex';
+    // already open: ensure UI visible
+    if (controls) controls.style.display = 'flex';
+    if (leftPage) leftPage.style.display = 'block';
+    if (pagesContainer) pagesContainer.style.display = 'block';
     return;
   }
 
-  // Make left and pages visible behind the cover (but keep them subtle until cover moves)
-  leftPage.style.display = 'block';
-  pagesContainer.style.display = 'block';
-  leftPage.style.opacity = '0';
-  pagesContainer.style.opacity = '0';
-  controls.style.display = 'none'; // show controls after animation
+  // Make left and right pages visible behind the cover (but hidden initially)
+  if (leftPage) {
+    leftPage.style.display = 'block';
+    leftPage.style.opacity = '0';
+  }
+  if (pagesContainer) {
+    pagesContainer.style.display = 'block';
+    pagesContainer.style.opacity = '0';
+  }
+  if (controls) controls.style.display = 'none';
 
-  // Force a tiny repaint so styles apply before animation
+  // Force a repaint for consistent animation start
   void sketchbook.offsetWidth;
 
-  // animate fade-in for left and pages while opening cover
   const tl = gsap.timeline({
     onStart: () => {
       sketchbook.classList.add('open');
       cover.setAttribute('aria-pressed', 'true');
     },
     onComplete: () => {
-      // ensure controls visible after open completes
-      controls.style.display = 'flex';
-      leftPage.style.opacity = '';
-      pagesContainer.style.opacity = '';
+      if (controls) controls.style.display = 'flex';
+      if (leftPage) leftPage.style.opacity = '';
+      if (pagesContainer) pagesContainer.style.opacity = '';
     }
   });
 
+  // Rotate cover and fade in pages concurrently
   tl.to(cover, { duration: 1.0, rotationY: -160, transformOrigin: "left center", ease: "power3.out" }, 0);
   tl.to([leftPage, pagesContainer], { duration: 0.6, opacity: 1, ease: "power2.out" }, 0.1);
 
-  // Wait for timeline to finish
-  await tl.then ? tl : new Promise(res => setTimeout(res, 1100));
+  // Wait for animation to settle; gsap timeline returns a promise-like, but keep a safe timeout fallback
+  await new Promise(res => setTimeout(res, 1100));
 }
 
 function closeAndHide() {
   if (!sketchbook.classList.contains('open')) return;
 
-  // Hide controls immediately
-  controls.style.display = 'none';
+  if (controls) controls.style.display = 'none';
 
-  // animate cover closing and fade out pages
   const tl = gsap.timeline({
     onStart: () => {
       cover.setAttribute('aria-pressed', 'false');
     },
     onComplete: () => {
       sketchbook.classList.remove('open');
-      // hide left and pages after close so only cover remains
-      leftPage.style.display = 'none';
-      pagesContainer.style.display = 'none';
-      // reset cover rotation cleanly
+      // hide left and pages so only cover is visible
+      if (leftPage) leftPage.style.display = 'none';
+      if (pagesContainer) pagesContainer.style.display = 'none';
       cover.style.transform = 'rotateY(0deg)';
     }
   });
@@ -219,7 +221,7 @@ function closeAndHide() {
   tl.to(cover, { duration: 0.9, rotationY: 0, transformOrigin: "left center", ease: "power2.in" }, 0.05);
 }
 
-// Enter button behavior: toggle open/close with the above helpers
+// Enter button toggles open/close
 enterBtn.addEventListener('click', async () => {
   if (!sketchbook.classList.contains('open')) {
     await openAndReveal();
@@ -228,12 +230,11 @@ enterBtn.addEventListener('click', async () => {
   }
 });
 
-// Page-flip behavior (arrows)
+// Page flips (no change to page backgrounds: rightpage.png used for every right page)
 let current = 0;
 const maxIndex = pages.length - 1;
 let flipping = false;
 
-// Ensure stacking order on reveal/open
 function resetPageStack() {
   pages.forEach((p, i) => {
     p.style.zIndex = (100 - i);
@@ -248,7 +249,6 @@ async function flipPage(index, direction = 'forward') {
     const page = pages[index];
     const tl = gsap.timeline({
       onComplete: () => {
-        // housekeeping of stacking order after flip
         if (direction === 'forward') {
           page.style.transform = 'rotateY(0deg)';
           page.style.zIndex = 10 + index;
@@ -264,7 +264,6 @@ async function flipPage(index, direction = 'forward') {
       page.style.zIndex = 300;
       tl.to(page, { duration: 0.65, rotationY: -180, transformOrigin: "left center", ease: "power2.inOut" });
     } else {
-      // simulate flipping back: start visually rotated then animate to 0
       page.style.transform = 'rotateY(-180deg)';
       page.style.zIndex = 300;
       tl.to(page, { duration: 0.65, rotationY: 0, transformOrigin: "left center", ease: "power2.inOut" });
@@ -272,7 +271,7 @@ async function flipPage(index, direction = 'forward') {
   });
 }
 
-// Next/Prev wired to arrow buttons; ensure book is open first
+// Arrow buttons
 nextBtn.addEventListener('click', async () => {
   if (flipping) return;
   await openAndReveal();
@@ -293,7 +292,7 @@ prevBtn.addEventListener('click', async () => {
   flipping = false;
 });
 
-// goToPage flips sequentially toward the target index
+// goToPage sequential flips
 async function goToPage(target) {
   if (!sketchbook.classList.contains('open')) {
     await openAndReveal();
@@ -312,13 +311,12 @@ async function goToPage(target) {
   }
 }
 
-// Keyboard shortcuts
+// keyboard controls
 document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowRight') nextBtn.click();
   if (e.key === 'ArrowLeft') prevBtn.click();
   if (e.key === 'Escape') closeAndHide();
   if (e.key === 'Enter') {
-    // If focus is on an input/select, let it behave; otherwise toggle book
     const tag = document.activeElement && document.activeElement.tagName;
     if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') {
       enterBtn.click();
@@ -326,7 +324,7 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// Ambient doodles animation (keeps previous behavior)
+// Ambient doodles animation (unchanged)
 gsap.utils.toArray('.floating').forEach((el, i) => {
   gsap.to(el, {
     y: (i + 1) * 10,
