@@ -1,18 +1,13 @@
 /* style.css
-   Clean, opinionated stylesheet for the sketchbook portfolio.
+   Updated to:
+   - Ensure each page's own title/content (Home, About Me, Digital Art, Animations/GIFs, Sketchbook, Demo Reel)
+     are visible when the book is OPEN.
+   - Keep the full-screen cover (bookcover.jpg) and centered cover-art only while the book is CLOSED.
+   - Keep the dropdown page menu in the TOP-LEFT and visible when the book is OPEN (hidden when closed).
+   - Make sure arrow controls are visible when open.
+   - Responsive fallbacks for small screens.
 
-   Behavior summary:
-   - Closed state (default): a full-viewport cover using assets/bookcover.jpg.
-     The cover title, subtitle and Enter button are centered on top of the cover.
-   - Open state: the cover returns to the right-page role, the site shows a single
-     full-spread background using assets/backgroundpaper.png, and the book UI (page
-     content and arrow controls) become visible. Left/right page "chrome" is hidden
-     visually while open to present a clean background layer.
-   - Page content and controls are visible only when open. The top-right menu is
-     hidden until the book is opened.
-   - Responsive fallbacks for narrow viewports included.
-
-   Replace the repo's style.css with this file. Hard-refresh after replacing.
+   Replace your current style.css with this file and hard-refresh (Ctrl/Cmd+Shift+R).
 */
 
 :root{
@@ -27,34 +22,31 @@
   --max-single-page-width: 900px;
 }
 
-/* Basic reset */
+/* Reset */
 * { box-sizing: border-box; }
 html,body,#app { height:100%; margin:0; background:var(--paper); -webkit-font-smoothing:antialiased; }
 body { font-family: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue"; color:var(--ink); }
 
-/* Decorative paper texture */
-.paper-bg {
-  position: fixed; inset: 0; z-index: -1;
+/* Decorative paper */
+.paper-bg { position: fixed; inset:0; z-index:-1;
   background:
     linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 40%),
     url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"><rect fill="%23fbf7ef" width="100%" height="100%"/></svg>');
 }
 
-/* Stage: full width */
+/* Stage */
 .sketchbook {
-  width: 100%;
-  min-height: 100vh;
-  padding: var(--gutter);
-  position: relative;
-  overflow: visible;
-  -webkit-font-smoothing:antialiased;
+  width:100%;
+  min-height:100vh;
+  padding:var(--gutter);
+  position:relative;
+  overflow:visible;
 }
 
-/* --------------------
-   CLOSED COVER (defaults)
-   --------------------
-   When .sketchbook does NOT have .open the cover becomes a full-viewport background
-   using bookcover.jpg. This rule intentionally takes precedence.
+/* ---------------------------
+   CLOSED COVER (definitive)
+   ---------------------------
+   When NOT .open, show a full-viewport cover using bookcover.jpg.
 */
 .sketchbook:not(.open) .cover {
   position: fixed !important;
@@ -64,7 +56,6 @@ body { font-family: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Sego
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  margin: 0 !important;
   z-index: 1400 !important;
   background-image: var(--cover-src) !important;
   background-size: cover !important;
@@ -74,10 +65,11 @@ body { font-family: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Sego
   box-shadow: none !important;
   pointer-events: auto !important;
 }
+.sketchbook:not(.open) .cover::before { display: none !important; }
 
-/* cover overlay (title / subtitle / enter) visible only when closed */
+/* Cover overlay (title/subtitle/enter) ONLY visible when closed */
 .sketchbook:not(.open) .cover-art {
-  text-align: center;
+  text-align:center;
   max-width: min(var(--max-single-page-width), 92vw);
   padding: 20px;
   color: #fff;
@@ -87,7 +79,6 @@ body { font-family: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Sego
 .sketchbook:not(.open) .cover-art .cover-title {
   margin: 0 0 8px 0;
   font-size: clamp(28px, 6vw, 56px);
-  line-height: 1;
   color: #fff;
   text-shadow: 0 8px 28px rgba(0,0,0,0.6);
 }
@@ -99,7 +90,6 @@ body { font-family: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Sego
 }
 .sketchbook:not(.open) .enter-btn {
   pointer-events: auto;
-  display: inline-block;
   padding: 12px 24px;
   border-radius: 10px;
   border: 2px solid rgba(255,255,255,0.95);
@@ -108,11 +98,9 @@ body { font-family: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Sego
   font-size: clamp(14px, 2.6vw, 20px);
   cursor: pointer;
   box-shadow: 0 8px 24px rgba(0,0,0,0.45);
-  -webkit-backdrop-filter: blur(3px);
-  backdrop-filter: blur(3px);
 }
 
-/* Hide the framed book panels while closed */
+/* Hide framed panels while closed */
 .sketchbook:not(.open) .left-page,
 .sketchbook:not(.open) .pages,
 .sketchbook:not(.open) .pages .page {
@@ -121,13 +109,13 @@ body { font-family: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Sego
   pointer-events: none !important;
 }
 
-/* --------------------
+/* ---------------------------
    OPEN STATE
-   --------------------
-   When .sketchbook has .open: revert the cover to its right-page role, show
-   the open-background as a single full-spread layer and show page content and controls.
+   ---------------------------
+   When .open: show open background (backgroundpaper.png), show page content & controls,
+   hide the cover overlay.
 */
-/* full-spread background layer (backgroundpaper.png) */
+/* full-spread background when open */
 .sketchbook.open::before {
   content: "";
   position: absolute;
@@ -140,13 +128,13 @@ body { font-family: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Sego
   pointer-events: none;
 }
 
-/* cover reverts to page on the right */
+/* Cover reverts to right page when open */
 .sketchbook.open .cover {
   position: absolute !important;
   top: var(--gutter);
   right: var(--gutter);
   bottom: var(--gutter);
-  width: calc((100% - (var(--gutter) * 2)) / 2 - (var(--spine) / 2)) !important;
+  width: calc((100% - (var(--gutter)*2)) / 2 - (var(--spine)/2)) !important;
   display: flex !important;
   align-items: center;
   justify-content: center;
@@ -155,10 +143,13 @@ body { font-family: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Sego
   z-index: 200;
 }
 
-/* hide the cover overlay when open */
-.sketchbook.open .cover-art { display: none !important; pointer-events: none !important; }
+/* Hide cover overlay when open */
+.sketchbook.open .cover-art {
+  display: none !important;
+  pointer-events: none !important;
+}
 
-/* hide framed visuals (backgrounds/borders/shadows) so open-bg is primary */
+/* Hide visual page chrome so open-bg is primary */
 .sketchbook.open .left-page,
 .sketchbook.open .pages,
 .sketchbook.open .pages .page {
@@ -170,7 +161,10 @@ body { font-family: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Sego
   pointer-events: none !important;
 }
 
-/* Page content visible only when open */
+/* PAGE CONTENT VISIBILITY:
+   - Page content (title + body) must be visible when OPEN on their respective pages.
+   - While CLOSED, page content is hidden.
+*/
 .sketchbook.open .page-content,
 .sketchbook.open .left-page-section {
   display: block !important;
@@ -178,7 +172,7 @@ body { font-family: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Sego
   pointer-events: auto !important;
 }
 
-/* hide page content while closed (full-bleed cover only) */
+/* Hide page content only in closed state */
 .sketchbook:not(.open) .page-content,
 .sketchbook:not(.open) .left-page-section {
   display: none !important;
@@ -186,7 +180,16 @@ body { font-family: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Sego
   pointer-events: none !important;
 }
 
-/* Controls (prev/next) - hidden when closed, visible when open */
+/* Ensure page H2s are prominent */
+.pages .page .page-content h2 {
+  margin: 0 0 12px 0;
+  font-size: 26px;
+  font-weight: 700;
+  font-family: "Carrotflower", "Amatic SC", sans-serif;
+  color: var(--ink);
+}
+
+/* CONTROLS (prev/next) - container hidden while closed, visible when open */
 .controls {
   position: absolute;
   left: 50%;
@@ -209,17 +212,37 @@ body { font-family: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Sego
   font-family: "Carrotflower", "Amatic SC", sans-serif;
 }
 
-/* Top-right menu hidden until open (JS mirrors this by setting aria-hidden) */
-.sketchbook:not(.open) #pageMenu { display: none !important; pointer-events: none !important; opacity: 0 !important; }
-.sketchbook.open #pageMenu { display: flex !important; pointer-events: auto !important; opacity: 1 !important; }
+/* PAGE MENU (top-left) - hidden until open; visible when open */
+#pageMenu {
+  position: absolute;
+  top: 12px;
+  left: 14px;          /* top-left placement as requested */
+  z-index: 1600;
+  display: none;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+  pointer-events: none;
+}
+.sketchbook.open #pageMenu {
+  display: flex !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
+}
 
-/* Misc visuals */
-.cover::before { /* keep but allow override via JS/CSS when needed */ content: ""; position: absolute; inset: 0; z-index: 10; background: transparent; pointer-events: none; }
+/* Make sure menu button and select look consistent */
+#pageMenu button, #pageMenu select {
+  font-family: "Carrotflower", "Amatic SC", sans-serif;
+  font-size: 18px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 2px solid rgba(0,0,0,0.12);
+  background: rgba(255,255,255,0.95);
+  cursor: pointer;
+}
 
-/* Accessibility helpers - visually hidden class */
-.sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-
-/* Small screen: stack panels for readability and don't force full-bleed */
+/* Accessibility: hide open-only content from screen readers when not open via JS where appropriate. */
+/* Small screens: stacked layout for readability */
 @media (max-width: 560px) {
   .sketchbook:not(.open) .cover { position: relative !important; height: auto !important; }
   .sketchbook.open::before { display: none !important; }
