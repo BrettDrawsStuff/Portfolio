@@ -113,3 +113,57 @@ html,body,#app{height:100%;margin:0;font-family:"Carrotflower", "Amatic SC", sys
   .left-nav{flex-direction:row;flex-wrap:wrap;gap:6px}
   .left-nav .nav-item{font-size:14px;padding:6px 8px}
 }
+
+/* Book spread sizing tweak: ensure both halves match visually */
+:root {
+  /* Adjust this for a wider or narrower spine between left/right */
+  --spine: 12px;
+}
+
+/* Make the left and right halves share the same visual width,
+   subtracting half the visible spine from each side so the total remains 100%. */
+.left-page {
+  left: 0;
+  width: calc(50% - (var(--spine) / 2));
+  transform-origin: right center;
+  border-left: 6px solid rgba(0,0,0,0.03);
+  padding: 20px;
+}
+
+/* Right side stack matches the left side exactly */
+.pages {
+  right: 0;
+  width: calc(50% - (var(--spine) / 2));
+  height: 100%;
+  position: absolute;
+  top: 0;
+  transform-style: preserve-3d;
+}
+
+/* Cover should align with the pages width so flips look balanced */
+.cover {
+  right: 0;
+  width: calc(50% - (var(--spine) / 2));
+  z-index: 50;
+  transform-origin: left center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg,#f5e9dc,#f0e0cb);
+  border: 3px solid #cdb8a3;
+  transform: rotateY(0deg);
+}
+
+/* Slight visual spine shadow so the center reads as a book gutter */
+.sketchbook::before {
+  content: "";
+  position: absolute;
+  left: calc(50% - (var(--spine) / 2));
+  top: 0;
+  width: var(--spine);
+  height: 100%;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(0,0,0,0.04), rgba(0,0,0,0.02) 40%, rgba(0,0,0,0.00));
+  z-index: 40;
+  mix-blend-mode: multiply;
+}
