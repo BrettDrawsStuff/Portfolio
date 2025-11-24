@@ -5,14 +5,22 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write     # required for pushing files
+  pages: write        # required to publish Pages
+  id-token: write     # required if you use OIDC (optional)
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true   # IMPORTANT: allow git push with GITHUB_TOKEN
+          fetch-depth: 0
 
-      - name: Setup Node (for stability, optional)
+      - name: Setup Node (optional)
         uses: actions/setup-node@v4
         with:
           node-version: '18'
@@ -23,5 +31,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           publish_dir: .
-          # exclude files you don't want published (optional)
           exclude_assets: .github/**,README.md
