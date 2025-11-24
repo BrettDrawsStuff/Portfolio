@@ -1,9 +1,9 @@
 // script.js
-// Updated to ensure cover background is applied reliably by:
-// 1) injecting --cover-url CSS variable on the .cover element once the image loads
-// 2) leaving the CSS ::before rule to render the cover image (so cover-art cannot obscure it)
-//
-// Also keeps previous behavior: left/right sync, flipping, menu, and inline background fallbacks.
+// Minor updates: ensure the top-right page menu is hidden while the book is closed,
+// and becomes visible only after the book opens. This is enforced both by CSS (preferred)
+// and by explicit JS show/hide calls so accessibility attributes are updated.
+
+// ... previous behavior retained: left/right sync, flipping, inline background fallbacks, etc.
 
 const enterBtn = document.getElementById('enterBtn');
 const sketchbook = document.getElementById('sketchbook');
@@ -15,7 +15,7 @@ const nextBtn = document.getElementById('nextBtn');
 const prevBtn = document.getElementById('prevBtn');
 const controls = document.querySelector('.controls');
 
-// Asset paths (relative)
+// Asset paths
 const COVER_SRC = 'assets/bookcover.jpg';
 const LEFT_SRC = 'assets/leftpage.png';
 const RIGHT_SRC = 'assets/rightpage.png';
@@ -30,13 +30,13 @@ const PAGE_TITLES = [
   'Demo Reel'
 ];
 
-// Capture right-page templates (HTML inside .page-content)
+// Capture right-page templates
 const pageTemplates = pages.map(p => {
   const content = p.querySelector('.page-content');
   return content ? content.innerHTML : '';
 });
 
-// Ensure left has a dedicated content slot at top
+// Ensure left slot
 function ensureLeftSlot() {
   if (!leftPage) return null;
   const container = leftPage.querySelector('.page-content');
@@ -56,7 +56,6 @@ function ensureLeftSlot() {
 }
 const leftSlot = ensureLeftSlot();
 
-// Strip the leading H2 from a template HTML string
 function stripLeadingH2(html) {
   const temp = document.createElement('div');
   temp.innerHTML = html || '';
@@ -65,7 +64,6 @@ function stripLeadingH2(html) {
   return temp.innerHTML;
 }
 
-// Sync left slot for index
 function syncLeftForIndex(index) {
   const i = Math.max(0, Math.min(index, pageTemplates.length - 1));
   const templateHtml = pageTemplates[i] || '';
@@ -79,7 +77,7 @@ function syncLeftForIndex(index) {
   }
 }
 
-// Apply inline backgrounds for left/right as fallback
+// Inline backgrounds fallback
 function applyInlineBackgrounds() {
   if (leftPage) {
     leftPage.style.backgroundImage = `url('${LEFT_SRC}')`;
@@ -95,28 +93,39 @@ function applyInlineBackgrounds() {
   });
 }
 
-// Ensure cover image loads, then inject CSS variable used by .cover::before
+// Ensure cover background via CSS variable + inline fallback (preloads image)
 function ensureCoverBackground() {
   if (!cover) return;
   const img = new Image();
   img.onload = () => {
-    // set CSS variable on the cover element so ::before uses it
     cover.style.setProperty('--cover-url', `url('${COVER_SRC}')`);
-    // also set inline background-image as an additional fallback
     cover.style.backgroundImage = `url('${COVER_SRC}')`;
     cover.style.backgroundSize = 'contain';
     cover.style.backgroundPosition = 'center';
     cover.style.backgroundRepeat = 'no-repeat';
-    console.log('Cover image loaded and applied:', COVER_SRC);
+    console.log('Cover image loaded');
   };
   img.onerror = () => {
-    console.error('Failed to load cover image at', COVER_SRC);
-    // optional on-screen hint can be added here in development
+    console.error('Cover image failed to load:', COVER_SRC);
   };
   img.src = COVER_SRC;
 }
 
-// initial view: apply backgrounds, sync left (home), hide pages until open
+// Show/hide page menu (updates aria-hidden for accessibility)
+function showPageMenu() {
+  const menu = document.getElementById('pageMenu');
+  if (!menu) return;
+  menu.style.display = 'flex';
+  menu.setAttribute('aria-hidden', 'false');
+}
+function hidePageMenu() {
+  const menu = document.getElementById('pageMenu');
+  if (!menu) return;
+  menu.style.display = 'none';
+  menu.setAttribute('aria-hidden', 'true');
+}
+
+// initial state
 function setInitialView() {
   applyInlineBackgrounds();
   syncLeftForIndex(0);
@@ -129,6 +138,9 @@ function setInitialView() {
   if (pagesContainer) pagesContainer.style.display = 'none';
   if (controls) controls.style.display = 'none';
 
+  // ensure menu is hidden while closed
+  hidePageMenu();
+
   cover.style.transform = 'rotateY(0deg)';
   pages.forEach((p, i) => {
     p.style.transform = 'rotateY(0deg)';
@@ -137,21 +149,23 @@ function setInitialView() {
 }
 setInitialView();
 
-// menu creation (hamburger + select)
+// Create menu: ensure menu element starts hidden (JS-level too)
 function createPageMenu() {
   const existing = document.getElementById('pageMenu');
   if (existing) existing.remove();
 
   const menu = document.createElement('div');
   menu.id = 'pageMenu';
+  menu.setAttribute('aria-hidden', 'true'); // mark hidden initially
   Object.assign(menu.style, {
     position: 'absolute', top: '12px', right: '14px', zIndex: 800,
-    display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'inherit', pointerEvents: 'auto'
+    display: 'none', /* start hidden until book is opened */
+    alignItems: 'center', gap: '6px', fontFamily: 'inherit', pointerEvents: 'none'
   });
 
   const btn = document.createElement('button');
   btn.type = 'button'; btn.title = 'Menu'; btn.innerHTML = '☰';
-  Object.assign(btn.style, { fontSize:'20px', padding:'6px 8px', borderRadius:'6px', border:'2px solid rgba(0,0,0,0.12)', background:'rgba(255,255,255,0.9)', cursor:'pointer' });
+  Object.assign(btn.style, { fontSize:'20px', padding:'6px 8px', borderRadius:'6px', border:'2px solid rgba(0,0,0,0.12)', background:'rgba(255,255,255,0.9)', cursor:'pointer', fontFamily: '"Carrotflower", "Amatic SC", sans-serif' });
 
   const select = document.createElement('select');
   select.id = 'pageSelect';
@@ -180,22 +194,25 @@ function createPageMenu() {
   menu.appendChild(btn);
   menu.appendChild(select);
   sketchbook.appendChild(menu);
+  // Keep it hidden until open: (redundant with CSS rule, but ensures accessibility state)
+  hidePageMenu();
 }
 createPageMenu();
 
-// open animation
+// open animation: after opening, reveal the page menu
 async function openAndReveal() {
   if (sketchbook.classList.contains('open')) {
     if (controls) controls.style.display = 'flex';
     if (leftPage) leftPage.style.display = 'block';
     if (pagesContainer) pagesContainer.style.display = 'block';
+    showPageMenu();
     return;
   }
 
   if (leftPage) { leftPage.style.display = 'block'; leftPage.style.opacity = '0'; }
   if (pagesContainer) { pagesContainer.style.display = 'block'; pagesContainer.style.opacity = '0'; }
   if (controls) controls.style.display = 'none';
-  void sketchbook.offsetWidth; // reflow
+  void sketchbook.offsetWidth;
 
   const tl = gsap.timeline({
     onStart: () => {
@@ -206,6 +223,8 @@ async function openAndReveal() {
       if (controls) controls.style.display = 'flex';
       if (leftPage) leftPage.style.opacity = '';
       if (pagesContainer) pagesContainer.style.opacity = '';
+      // reveal the menu once open animation completes
+      showPageMenu();
     }
   });
 
@@ -216,7 +235,7 @@ async function openAndReveal() {
   await new Promise(res => setTimeout(res, 1100));
 }
 
-// close
+// close: hide menu again once closed
 function closeAndHide() {
   if (!sketchbook.classList.contains('open')) return;
   if (controls) controls.style.display = 'none';
@@ -228,6 +247,8 @@ function closeAndHide() {
       if (leftPage) leftPage.style.display = 'none';
       if (pagesContainer) pagesContainer.style.display = 'none';
       cover.style.transform = 'rotateY(0deg)';
+      // hide the menu when the book is closed
+      hidePageMenu();
     }
   });
 
@@ -235,7 +256,7 @@ function closeAndHide() {
   tl.to(cover, { duration: 0.9, rotationY: 0, transformOrigin: "left center", ease: "power2.in" }, 0.05);
 }
 
-// Enter button
+// Enter button hookup
 enterBtn.addEventListener('click', async () => {
   if (!sketchbook.classList.contains('open')) {
     await openAndReveal();
@@ -244,7 +265,7 @@ enterBtn.addEventListener('click', async () => {
   }
 });
 
-// page flip logic
+// Page flips (unchanged)
 let current = 0;
 const maxIndex = pages.length - 1;
 let flipping = false;
@@ -285,7 +306,7 @@ function flipPage(index, direction = 'forward') {
   });
 }
 
-// next/prev handlers
+// Next/Prev handlers
 nextBtn.addEventListener('click', async () => {
   if (flipping) return;
   await openAndReveal();
@@ -341,7 +362,7 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// ambient doodles
+// ambient doodles (unchanged)
 gsap.utils.toArray('.floating').forEach((el, i) => {
   gsap.to(el, {
     y: (i + 1) * 10,
@@ -354,7 +375,7 @@ gsap.utils.toArray('.floating').forEach((el, i) => {
   });
 });
 
-// ensure cover background is applied once page loads (additional safety)
+// Ensure cover + backgrounds are applied when the page loads
 window.addEventListener('load', () => {
   ensureCoverBackground();
   applyInlineBackgrounds();
