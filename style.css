@@ -1,157 +1,131 @@
-/* Prototype styles for the sketchbook portfolio
-   Updated to scale the sketchbook to full-screen while preserving
-   the design proportions and scaling all contents uniformly. */
+/* Styles for the full-screen sketchbook (no scaling) */
 
-/* fallback handwriting font included */
+/* fallback font */
 @import url('https://fonts.googleapis.com/css2?family=Amatic+SC:wght@400;700&display=swap');
 
 :root{
   --paper:#fbf7ef;
   --edge:#d8cbb9;
   --ink:#1b1b1b;
-
-  /* design dimensions (in px) - change here if you redesign the artboard */
-  --design-w: 1000;
-  --design-h: 680;
-
-  /* visual spine between left and right halves (px at design scale) */
-  --spine: 12px;
+  --spine: 12px; /* gutter width */
 }
 
-/* stage/app fills viewport and centers sketchbook */
-html,body{height:100%;margin:0;-webkit-font-smoothing:antialiased;}
-#app {
+/* Reset & full-screen stage */
+html,body,#app{height:100%;margin:0;font-family:"Carrotflower", "Amatic SC", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue"; -webkit-font-smoothing:antialiased; background:var(--paper); overflow:hidden;}
+.paper-bg{position:fixed;inset:0;z-index:-1;background:
+    linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 40%),
+    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"><rect fill="%23fbf7ef" width="100%" height="100%"/></svg>');}
+
+/* The sketchbook fills the available viewport with no scaling */
+.sketchbook{
   width:100vw;
   height:100vh;
   position:relative;
-  overflow:hidden;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:var(--paper);
-}
-
-/* background paper texture behind the scaled sketchbook */
-.paper-bg{
-  position:fixed;inset:0;z-index:-1;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 40%),
-    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"><rect fill="%23fbf7ef" width="100%" height="100%"/></svg>');
-}
-
-/* the sketchbook uses fixed design dimensions and will be scaled with transform */
-.sketchbook{
-  width:var(--design-w)px;
-  height:var(--design-h)px;
-  margin:0; /* centered by #app flexbox */
-  perspective:1600px;
-  position:relative;
-  transform-origin:center center; /* scale origin */
-  transform: scale(1); /* will be updated via JS */
-  transition: transform 0.08s linear;
+  display:block;
   transform-style:preserve-3d;
+  overflow:hidden;
+  box-sizing:border-box;
 }
 
-/* Book spread sizing tweak: ensure both halves match visually.
-   Left and right halves subtract half the visual spine so total remains design width. */
-.left-page {
-  left: 0;
-  width: calc(50% - (var(--spine) / 2));
-  transform-origin: right center;
-  border-left: 6px solid rgba(0,0,0,0.03);
-  padding: 20px;
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  background: var(--paper);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
-/* Right side stack matches the left side exactly */
-.pages{ 
-  right: 0;
-  width: calc(50% - (var(--spine) / 2));
-  height: 100%;
-  position: absolute;
-  top: 0;
-  transform-style: preserve-3d;
-}
-
-/* page & cover base rules */
-.page, .pages .page {
+/* left half (static) */
+.left-page{
   position:absolute;
-  top:0;bottom:0;
-  width:100%; /* individual page occupies the right half container */
+  left:0;
+  top:0;
+  bottom:0;
+  width: calc(50% - (var(--spine) / 2));
+  padding:28px;
+  background:var(--paper);
+  border-left:6px solid rgba(0,0,0,0.03);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.02);
+  display:flex;
+  align-items:flex-start;
+  justify-content:flex-start;
+  z-index:20;
+}
+
+/* right half container for flipping pages */
+.pages{
+  position:absolute;
+  right:0;
+  top:0;
+  bottom:0;
+  width: calc(50% - (var(--spine) / 2));
+  transform-style:preserve-3d;
+  z-index:30;
+}
+
+/* page styling, each page fills the right half container */
+.page, .cover {
+  position:absolute;
+  top:0; bottom:0;
+  width:100%;
   height:100%;
   background:var(--paper);
-  box-shadow: 0 20px 60px rgba(17,17,17,0.25);
+  box-shadow: 0 24px 60px rgba(17,17,17,0.18);
   border: 2px solid var(--edge);
   overflow:hidden;
   transform-origin:left center;
   backface-visibility:hidden;
   border-right:6px solid rgba(0,0,0,0.02);
   display:flex;
-  align-items:center;
-  justify-content:center;
+  align-items:flex-start;
+  justify-content:flex-start;
+  padding:28px;
+  box-sizing:border-box;
 }
 
-/* cover aligned to right half container (it sits on top of .pages) */
+/* cover sits on the right half, on top of pages */
 .cover{
-  right:0;
-  width: calc(50% - (var(--spine) / 2));
-  z-index:50;
-  transform-origin:left center;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:linear-gradient(180deg,#f5e9dc,#f0e0cb);
-  border:3px solid #cdb8a3;
-  transform:rotateY(0deg);
+  z-index:200;
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+}
+
+/* the page-content sits inside each page and holds text/controls */
+.page-content {
+  width:100%;
+  color:var(--ink);
+  background:rgba(255,255,255,0.0); /* transparent to show rightpage.png */
+  font-size:20px;
+  box-sizing:border-box;
+}
+
+/* heading at top of each page (title) */
+.page-content h2 {
+  margin: 0 0 12px 0;
+  font-size:28px;
+  font-weight:700;
+}
+
+/* compact top-right menu area (select appended by JS) */
+/* small visual layering so it sits above content */
+#pageMenu { pointer-events:auto; }
+
+/* controls centered at bottom (arrow buttons) */
+.controls {
   position:absolute;
-  top:0;
-  bottom:0;
+  left:50%;
+  transform:translateX(-50%);
+  bottom:18px;
+  display:flex;
+  gap:12px;
+  z-index:500;
+}
+.controls button {
+  background:var(--paper);
+  border:2px solid #cbb79f;
+  padding:8px 12px;
+  border-radius:6px;
+  font-size:18px;
+  cursor:pointer;
 }
 
-/* content */
-.page-content{ padding:28px; text-align:left; color:var(--ink); font-size:20px;}
-.thumb{width:220px;height:140px;background:#efe8dd;border:2px dashed #d6cdbd;display:flex;align-items:center;justify-content:center;margin-top:8px; color:#8b7c6d}
+/* hide scrollbars for this full-screen app */
+html, body { -webkit-overflow-scrolling: touch; }
 
-/* left nav */
-.left-nav{display:flex;flex-direction:column;gap:8px;margin-top:12px}
-.left-nav .nav-item{background:transparent;border:2px solid #cbb79f;padding:8px 10px;border-radius:8px;cursor:pointer;font-family:inherit}
-
-/* cover text */
-.cover-title{font-size:28px;margin:0;}
-.subtitle{margin:6px 0 14px;color:#7a6a5a}
-
-/* enter button */
-.enter-btn{
-  margin-top:10px;
-  background:transparent;border:0;cursor:pointer;padding:0;
-  filter:drop-shadow(0 6px 8px rgba(0,0,0,0.12));
-}
-.enter-svg rect{stroke-dasharray:300; stroke-dashoffset:0; stroke-linejoin:round; fill:transparent;}
-.enter-btn:active .enter-svg rect{transform:translateY(1px)}
-
-/* controls */
-.controls{ position:absolute;left:50%;transform:translateX(-50%);bottom:18px; display:flex; gap:12px; z-index:80}
-.controls button{background:var(--paper);border:2px solid #cbb79f;padding:8px 12px;border-radius:6px;font-size:18px;cursor:pointer}
-
-/* ambient floating doodles */
-.ambient{position:absolute;inset:0;pointer-events:none}
-.floating{position:absolute;font-size:22px;opacity:0.9}
-.floating:nth-child(1){left:6%; top:12%}
-.floating:nth-child(2){right:12%; top:28%}
-.floating:nth-child(3){left:20%; bottom:8%}
-
-/* open/closed states */
-.sketchbook.closed .cover{transform:rotateY(0deg)}
-.sketchbook.open .cover{transform:rotateY(-160deg); transition:transform 1.2s cubic-bezier(.2,.9,.2,1)}
-.sketchbook.open .left-page{ transform:translateX(-6px) }
-
-/* visual spine gutter */
+/* visual central spine gutter */
 .sketchbook::before {
   content: "";
   position: absolute;
@@ -161,18 +135,14 @@ html,body{height:100%;margin:0;-webkit-font-smoothing:antialiased;}
   height: 100%;
   pointer-events: none;
   background: linear-gradient(90deg, rgba(0,0,0,0.04), rgba(0,0,0,0.02) 40%, rgba(0,0,0,0.00));
-  z-index: 40;
-  mix-blend-mode: multiply;
+  z-index:40;
 }
 
-/* responsive adjustments (if viewport becomes extremely narrow, allow scroll) */
-@media (max-aspect-ratio: 1000/680) {
-  /* If the viewport is very tall and narrow, allow the sketchbook to remain centered and scale to width */
-}
-
-/* small tweaks for small screens */
-@media (max-width:480px) {
-  .page-content{ font-size:16px }
-  .controls button{ font-size:16px; padding:6px 10px }
-  .thumb{ width:140px; height:100px }
+/* responsive tweaks for narrow viewports */
+@media (max-width:640px) {
+  .page-content { font-size:16px; padding:18px; }
+  .page-content h2 { font-size:20px; }
+  .controls button { padding:6px 10px; font-size:16px; }
+  .left-page { padding:18px; }
+  .page, .cover { padding:18px; }
 }
