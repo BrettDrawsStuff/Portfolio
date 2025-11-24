@@ -17,87 +17,82 @@
   <div id="app">
     <div class="paper-bg" aria-hidden="true"></div>
 
+    <!-- Sketchbook: centered container. Closed view shows only the cover; open view shows left + right pages -->
     <div class="sketchbook closed" id="sketchbook" role="application" aria-label="Sketchbook portfolio">
-      <!-- left inside (stationary) with nav -->
+      <!-- Left inside (stationary) with nav -->
       <div class="page left-page" id="left">
         <div class="page-content">
           <h3 class="site-title">BrettDrawsStuff</h3>
-          <nav class="left-nav" aria-label="Site sections">
-            <button class="nav-item" data-target="0">Home</button>
-            <button class="nav-item" data-target="1">About Me</button>
-            <button class="nav-item" data-target="2">Digital Art</button>
-            <button class="nav-item" data-target="3">Animations/GIFs</button>
-            <button class="nav-item" data-target="4">Sketchbook</button>
-            <button class="nav-item" data-target="5">Demo Reel</button>
-          </nav>
-          <p class="hint">Use ← → or the buttons to turn pages. Press Enter to open the cover.</p>
+          <!-- Menu is created by JS and appended here/top-right; left nav area reserved for possible permanent links -->
+          <div class="hint-block">
+            <nav class="left-nav" aria-label="Site sections (compact menu available in top-right)">
+              <!-- static fallback nav (JS menu is preferred) -->
+              <button class="nav-item" data-target="0">Home</button>
+              <button class="nav-item" data-target="1">About Me</button>
+              <button class="nav-item" data-target="2">Digital Art</button>
+              <button class="nav-item" data-target="3">Animations/GIFs</button>
+              <button class="nav-item" data-target="4">Sketchbook</button>
+              <button class="nav-item" data-target="5">Demo Reel</button>
+            </nav>
+            <p class="hint">Use ← → or the buttons to turn pages. Press Enter to open the cover.</p>
+          </div>
         </div>
       </div>
 
-      <!-- stack of right-side pages (flippable) -->
+      <!-- Right-side pages container (flippable). Each .page is a right-hand page -->
       <div class="pages" id="pages">
         <div class="page page-0 front" data-page="0">
           <div class="page-content">
             <h2>Home</h2>
-            <p>Welcome — brief intro and featured image/teaser.</p>
-            <div class="thumb">Drop a featured image in /assets/featured.jpg</div>
+            <div class="content-inner">Welcome — brief intro and featured image/teaser.</div>
           </div>
         </div>
 
         <div class="page page-1" data-page="1">
           <div class="page-content">
             <h2>About Me</h2>
-            <p>Short bio, process notes, contact summary.</p>
+            <div class="content-inner">Short bio, process notes, contact summary.</div>
           </div>
         </div>
 
         <div class="page page-2" data-page="2">
           <div class="page-content">
             <h2>Digital Art</h2>
-            <p>Gallery of finished illustrations and paintings.</p>
+            <div class="content-inner">Gallery of finished illustrations and paintings.</div>
           </div>
         </div>
 
         <div class="page page-3" data-page="3">
           <div class="page-content">
             <h2>Animations/GIFs</h2>
-            <p>Short looping pieces, sprite GIFs, micro-animations.</p>
+            <div class="content-inner">Short looping pieces, sprite GIFs, micro-animations.</div>
           </div>
         </div>
 
         <div class="page page-4" data-page="4">
           <div class="page-content">
             <h2>Sketchbook</h2>
-            <p>Rough studies, quick sketches — the well-used pages.</p>
+            <div class="content-inner">Rough studies, quick sketches — the well-used pages.</div>
           </div>
         </div>
 
         <div class="page page-5" data-page="5">
           <div class="page-content">
             <h2>Demo Reel</h2>
-            <p>Embedded video or link to longer motion/animation reel.</p>
+            <div class="content-inner">Embedded video or link to longer motion/animation reel.</div>
           </div>
         </div>
       </div>
 
-      <!-- cover -->
+      <!-- Cover (visible at start) -->
       <div class="page cover" id="cover" role="button" aria-pressed="false">
         <div class="cover-art">
-          <h1 class="cover-title">BrettDrawsStuff's Portfolio</h1>
+          <h1 class="cover-title">Brett's Portfolio</h1>
           <p class="subtitle">a well-used sketchbook</p>
 
-          <button id="enterBtn" class="enter-btn" aria-label="Open sketchbook">
-            <svg viewBox="0 0 120 36" class="enter-svg" xmlns="http://www.w3.org/2000/svg">
-              <rect x="2" y="2" width="116" height="32" rx="8" ry="8" fill="transparent" stroke="#111" stroke-width="3"></rect>
-              <text x="60" y="22" text-anchor="middle" font-family="Carrotflower, Amatic SC, sans-serif" font-size="14" fill="#111">enter</text>
-            </svg>
-          </button>
+          <!-- Enter button shows the label "Enter" as requested -->
+          <button id="enterBtn" class="enter-btn" aria-label="Open sketchbook">Enter</button>
 
-          <div class="cover-doodles" aria-hidden="true">
-            <svg viewBox="0 0 100 40" class="small-doodle">
-              <path d="M4 30 q30 -40 60 -12" stroke="#111" stroke-width="2" fill="none"/>
-            </svg>
-          </div>
         </div>
       </div>
 
