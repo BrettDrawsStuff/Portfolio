@@ -1,57 +1,71 @@
 /* style.css
-   Strong guarantee for CLOSED COVER:
-   - When the book is closed (no .open), the cover fills the viewport with bookcover.jpg
-     (background-size: cover) and the cover title / subtitle / Enter button are centered
-     and scaled responsively.
-   - Other panels are hidden while closed to avoid any white/duplicate UI.
-   - When the book opens, the cover returns to its normal spread role and the open-state
-     backgroundpaper.png behavior is preserved.
-   Replace your current style.css with this file and hard-refresh (Cmd/Ctrl+Shift+R).
+   Clean, opinionated stylesheet for the sketchbook portfolio.
+
+   Behavior summary:
+   - Closed state (default): a full-viewport cover using assets/bookcover.jpg.
+     The cover title, subtitle and Enter button are centered on top of the cover.
+   - Open state: the cover returns to the right-page role, the site shows a single
+     full-spread background using assets/backgroundpaper.png, and the book UI (page
+     content and arrow controls) become visible. Left/right page "chrome" is hidden
+     visually while open to present a clean background layer.
+   - Page content and controls are visible only when open. The top-right menu is
+     hidden until the book is opened.
+   - Responsive fallbacks for narrow viewports included.
+
+   Replace the repo's style.css with this file. Hard-refresh after replacing.
 */
 
 :root{
   --paper: #fbf7ef;
   --ink: #1b1b1b;
+  --edge: #d8cbb9;
   --gutter: 20px;
+  --page-padding: 28px;
+  --spine: 12px;
   --open-bg-url: url("assets/backgroundpaper.png");
   --cover-src: url("assets/bookcover.jpg");
+  --max-single-page-width: 900px;
 }
 
-/* reset */
+/* Basic reset */
 * { box-sizing: border-box; }
 html,body,#app { height:100%; margin:0; background:var(--paper); -webkit-font-smoothing:antialiased; }
 body { font-family: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue"; color:var(--ink); }
 
-/* stage */
+/* Decorative paper texture */
+.paper-bg {
+  position: fixed; inset: 0; z-index: -1;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 40%),
+    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"><rect fill="%23fbf7ef" width="100%" height="100%"/></svg>');
+}
+
+/* Stage: full width */
 .sketchbook {
-  width:100%;
-  min-height:100vh;
-  padding:var(--gutter);
-  position:relative;
-  overflow:visible;
+  width: 100%;
+  min-height: 100vh;
+  padding: var(--gutter);
+  position: relative;
+  overflow: visible;
   -webkit-font-smoothing:antialiased;
 }
 
-/* -------------------------
-   CLOSED COVER (definitive)
-   -------------------------
-   This rule must take precedence so the closed cover is a full-viewport background.
-   We force it with !important to avoid overrides from older rules.
+/* --------------------
+   CLOSED COVER (defaults)
+   --------------------
+   When .sketchbook does NOT have .open the cover becomes a full-viewport background
+   using bookcover.jpg. This rule intentionally takes precedence.
 */
 .sketchbook:not(.open) .cover {
   position: fixed !important;
-  inset: 0 !important;                    /* fill viewport */
+  inset: 0 !important;
   width: 100% !important;
   height: 100% !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   margin: 0 !important;
-  left: 0 !important;
-  top: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  z-index: 9999 !important;
+  z-index: 1400 !important;
   background-image: var(--cover-src) !important;
   background-size: cover !important;
   background-position: center center !important;
@@ -59,11 +73,46 @@ body { font-family: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Sego
   border: none !important;
   box-shadow: none !important;
   pointer-events: auto !important;
-  /* ensure there's no pseudo-element covering it */
 }
-.sketchbook:not(.open) .cover::before { display: none !important; }
 
-/* hide left/right panels when closed so nothing shows behind the cover */
+/* cover overlay (title / subtitle / enter) visible only when closed */
+.sketchbook:not(.open) .cover-art {
+  text-align: center;
+  max-width: min(var(--max-single-page-width), 92vw);
+  padding: 20px;
+  color: #fff;
+  z-index: 1410;
+  pointer-events: none;
+}
+.sketchbook:not(.open) .cover-art .cover-title {
+  margin: 0 0 8px 0;
+  font-size: clamp(28px, 6vw, 56px);
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 8px 28px rgba(0,0,0,0.6);
+}
+.sketchbook:not(.open) .cover-art .subtitle {
+  margin: 0 0 18px 0;
+  font-size: clamp(14px, 2.4vw, 20px);
+  color: rgba(255,255,255,0.95);
+  text-shadow: 0 6px 18px rgba(0,0,0,0.45);
+}
+.sketchbook:not(.open) .enter-btn {
+  pointer-events: auto;
+  display: inline-block;
+  padding: 12px 24px;
+  border-radius: 10px;
+  border: 2px solid rgba(255,255,255,0.95);
+  background: rgba(0,0,0,0.18);
+  color: #fff;
+  font-size: clamp(14px, 2.6vw, 20px);
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+/* Hide the framed book panels while closed */
 .sketchbook:not(.open) .left-page,
 .sketchbook:not(.open) .pages,
 .sketchbook:not(.open) .pages .page {
@@ -72,66 +121,13 @@ body { font-family: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Sego
   pointer-events: none !important;
 }
 
-/* center and style the cover overlay content (title / subtitle / button) */
-.sketchbook:not(.open) .cover-art {
-  position: relative !important;
-  z-index: 10000 !important; /* above the background image */
-  pointer-events: none;
-  text-align: center;
-  width: min(1000px, 94vw);
-  padding: 16px;
-  margin: 0 auto;
-}
-
-/* title sizing and contrast on top of the full-bleed cover */
-.sketchbook:not(.open) .cover-art .cover-title {
-  margin: 0 0 8px 0;
-  font-size: clamp(28px, 6.5vw, 64px);
-  line-height: 1;
-  color: #ffffff;
-  text-shadow: 0 10px 30px rgba(0,0,0,0.55);
-}
-
-/* subtitle */
-.sketchbook:not(.open) .cover-art .subtitle {
-  margin: 0 0 18px 0;
-  font-size: clamp(14px, 2.4vw, 20px);
-  color: rgba(255,255,255,0.95);
-  text-shadow: 0 6px 18px rgba(0,0,0,0.35);
-}
-
-/* Enter button (visible and centered) */
-.sketchbook:not(.open) .enter-btn {
-  pointer-events: auto;
-  display: inline-block;
-  padding: 12px 24px;
-  font-size: clamp(14px, 2.6vw, 22px);
-  border-radius: 10px;
-  border: 2px solid rgba(255,255,255,0.95);
-  background: rgba(0,0,0,0.20);
-  color: #fff;
-  cursor: pointer;
-  box-shadow: 0 10px 26px rgba(0,0,0,0.45);
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
-}
-
-/* -------------------------
-   OPEN STATE (keeps previous behavior)
-   ------------------------- */
-.sketchbook.open .cover {
-  /* revert to spread layout; JS may also rotate it */
-  position: absolute !important;
-  right: var(--gutter) !important;
-  left: auto !important;
-  top: var(--gutter) !important;
-  bottom: var(--gutter) !important;
-  width: calc((100% - (var(--gutter) * 2)) / 2 - 6px) !important; /* approximate single page width */
-  height: auto !important;
-  transform: none !important;
-  z-index: 200 !important;
-  background: transparent !important;
-}
+/* --------------------
+   OPEN STATE
+   --------------------
+   When .sketchbook has .open: revert the cover to its right-page role, show
+   the open-background as a single full-spread layer and show page content and controls.
+*/
+/* full-spread background layer (backgroundpaper.png) */
 .sketchbook.open::before {
   content: "";
   position: absolute;
@@ -144,7 +140,25 @@ body { font-family: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Sego
   pointer-events: none;
 }
 
-/* hide framed visuals when open so only open backgroundpaper shows */
+/* cover reverts to page on the right */
+.sketchbook.open .cover {
+  position: absolute !important;
+  top: var(--gutter);
+  right: var(--gutter);
+  bottom: var(--gutter);
+  width: calc((100% - (var(--gutter) * 2)) / 2 - (var(--spine) / 2)) !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  transform-origin: left center;
+  background: transparent !important;
+  z-index: 200;
+}
+
+/* hide the cover overlay when open */
+.sketchbook.open .cover-art { display: none !important; pointer-events: none !important; }
+
+/* hide framed visuals (backgrounds/borders/shadows) so open-bg is primary */
 .sketchbook.open .left-page,
 .sketchbook.open .pages,
 .sketchbook.open .pages .page {
@@ -156,134 +170,59 @@ body { font-family: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Sego
   pointer-events: none !important;
 }
 
-/* keep controls/menu visible above background */
-.sketchbook.open #pageMenu,
-.sketchbook.open .controls,
-.sketchbook.open .cover-art {
-  opacity: 1 !important;
-  pointer-events: auto !important;
-  z-index: 1300 !important;
-}
-
-/* hide inner page text in open spread (prevents duplicate titles) */
-.sketchbook.open .page-content { display: none !important; }
-
-/* responsive fallback for small screens: don't force full-viewport cover */
-@media (max-width: 560px) {
-  .sketchbook:not(.open) .cover {
-    position: relative !important;
-    inset: auto !important;
-    width: 100% !important;
-    height: auto !important;
-    padding: 20px;
-    background-size: cover !important;
-  }
-  .sketchbook:not(.open) .cover-art { color: var(--ink); text-shadow: none; }
-  .sketchbook.open::before { display: none !important; } /* avoid full-bleed on tiny screens */
-}
-
-/* ensure interactive controls use Carrotflower */
-button, select, .nav-item { font-family: "Carrotflower", "Amatic SC", sans-serif; -webkit-font-smoothing:antialiased; }
-
-/* QUICK FIX: Hide the cover overlay (title / subtitle / Enter button) when the book is OPEN.
-   Add these rules to the bottom of your existing style.css (they're !important to ensure
-   they override prior rules). This keeps the cover-art centered/fullscreen only while closed. */
-
-.sketchbook.open .cover-art,
-.sketchbook.open .cover-art *,
-.sketchbook.open .cover .cover-title,
-.sketchbook.open .cover .subtitle,
-.sketchbook.open .cover .enter-btn {
-  display: none !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
-/* Ensure the cover overlay remains visible only when CLOSED */
-.sketchbook:not(.open) .cover-art {
-  display: block !important;
-  opacity: 1 !important;
-  pointer-events: auto !important;
-}
-
-/* END-OF-FILE OVERRIDES: fix overlay / page-content / controls visibility */
-
-/* 1) COVER OVERLAY: visible ONLY when CLOSED */
-.sketchbook:not(.open) .cover-art,
-.sketchbook:not(.open) .cover-art * {
-  display: block !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-  pointer-events: auto !important;
-}
-
-/* Hide the cover overlay when the book is OPEN (no duplicated titles/buttons) */
-.sketchbook.open .cover-art,
-.sketchbook.open .cover-art * {
-  display: none !important;
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-}
-
-/* 2) PAGE CONTENT: visible ONLY when OPEN */
+/* Page content visible only when open */
 .sketchbook.open .page-content,
-.sketchbook.open .left-page-section,
-.sketchbook.open .pages .page .page-content {
+.sketchbook.open .left-page-section {
   display: block !important;
   opacity: 1 !important;
-  visibility: visible !important;
   pointer-events: auto !important;
 }
 
-/* Hide page content while CLOSED (so the full-screen cover is the only UI) */
+/* hide page content while closed (full-bleed cover only) */
 .sketchbook:not(.open) .page-content,
-.sketchbook:not(.open) .left-page-section,
-.sketchbook:not(.open) .pages .page .page-content {
+.sketchbook:not(.open) .left-page-section {
   display: none !important;
   opacity: 0 !important;
-  visibility: hidden !important;
   pointer-events: none !important;
 }
 
-/* 3) CONTROLS (arrows / bottom controls): only visible when OPEN */
-/* Note: individual next/prev still controlled by JS to hide edges; this shows the container. */
+/* Controls (prev/next) - hidden when closed, visible when open */
+.controls {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--gutter) / 2);
+  z-index: 1300;
+  display: none;
+  gap: 12px;
+}
 .sketchbook.open .controls {
   display: flex !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-  pointer-events: auto !important;
+}
+.controls button {
+  background: var(--paper);
+  border: 2px solid #cbb79f;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 18px;
+  cursor: pointer;
+  font-family: "Carrotflower", "Amatic SC", sans-serif;
 }
 
-/* Keep the controls hidden while CLOSED */
-.sketchbook:not(.open) .controls {
-  display: none !important;
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-}
+/* Top-right menu hidden until open (JS mirrors this by setting aria-hidden) */
+.sketchbook:not(.open) #pageMenu { display: none !important; pointer-events: none !important; opacity: 0 !important; }
+.sketchbook.open #pageMenu { display: flex !important; pointer-events: auto !important; opacity: 1 !important; }
 
-/* 4) Ensure cover pseudo-element does not overlay content when closed (if used) */
-.sketchbook:not(.open) .cover::before {
-  display: none !important;
-}
+/* Misc visuals */
+.cover::before { /* keep but allow override via JS/CSS when needed */ content: ""; position: absolute; inset: 0; z-index: 10; background: transparent; pointer-events: none; }
 
-/* 5) Safety: ensure menu visibility still controlled by .open state (no change) */
-.sketchbook.open #pageMenu {
-  display: flex !important;
-  opacity: 1 !important;
-  pointer-events: auto !important;
-}
-.sketchbook:not(.open) #pageMenu {
-  display: none !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
+/* Accessibility helpers - visually hidden class */
+.sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 
-/* 6) Accessibility: hide cover-art from assistive tech when open and expose when closed.
-   If your JS toggles aria-hidden for menu it can also toggle this, but this is CSS-only.
-*/
-.sketchbook.open .cover-art { aria-hidden: true; }
-.sketchbook:not(.open) .cover-art { aria-hidden: false; }
-
-/* End of overrides */
+/* Small screen: stack panels for readability and don't force full-bleed */
+@media (max-width: 560px) {
+  .sketchbook:not(.open) .cover { position: relative !important; height: auto !important; }
+  .sketchbook.open::before { display: none !important; }
+  .left-page, .pages, .cover { position: relative !important; width: 100% !important; opacity: 1 !important; pointer-events: auto !important; display: block !important; }
+  .controls { position: static; transform: none; margin: 12px 0; justify-content: center; }
+}
