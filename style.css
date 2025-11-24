@@ -1,9 +1,7 @@
 /* style.css
-   Full-width layout update:
-   - The "sketchbook" is now a full-width, full-height (viewport) section instead of a centered fixed-size box.
-   - Keeps the book visuals (left/right halves, cover behavior) but removes the feeling of being trapped inside a small centered container.
-   - Preserves cover/left/right backgrounds and previous pseudo-element approach.
-   - Buttons/menus/fonts unchanged.
+   Update: left page background now uses the same approach as right pages
+   (background-image on the element with center/contain), mirroring the rightpage setup.
+   Rest of layout preserved (full-width stage, cover pseudo-element, menu rules, etc).
 */
 
 /* Typekit Carrotflower is loaded in index.html. Fallback to Amatic SC if missing. */
@@ -22,7 +20,6 @@ html, body, #app { height:100%; margin:0; background:var(--paper); -webkit-font-
 body {
   font-family: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue";
   color: var(--ink);
-  /* allow normal page scrolling if content grows; user requested "normal website" behavior */
   overflow-y: auto;
   -webkit-font-smoothing:antialiased;
 }
@@ -37,11 +34,7 @@ body {
     url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"><rect fill="%23fbf7ef" width="100%" height="100%"/></svg>');
 }
 
-/* SKETCHBOOK: full-bleed "stage"
-   - Uses the full viewport width by default, with a small outer gutter.
-   - Height matches viewport (min-height), so the book visuals remain large and immersive.
-   - Child elements are absolutely positioned to fill the sketchbook area, as before.
-*/
+/* SKETCHBOOK: full-bleed "stage" */
 .sketchbook {
   width: 100%;
   min-height: calc(100vh - (var(--gutter) * 2));
@@ -54,16 +47,15 @@ body {
   -webkit-user-select: none;
 }
 
-/* LEFT PAGE: left half of the spread
-   - Positioned absolutely to fill left half of the sketchbook (same approach as before).
-   - The visual background for the left page is provided by ::before and aligned to the left edge.
+/* LEFT PAGE
+   Mirror setup of right pages: background-image on the element itself,
+   centered and sized with contain, same as .pages .page.
 */
 .left-page {
   position: absolute;
   top: var(--gutter);
   left: var(--gutter);
   bottom: var(--gutter);
-  /* width is half of the available inner area minus half the spine */
   width: calc((100% - (var(--gutter) * 2)) / 2 - (var(--spine) / 2));
   padding: var(--page-padding);
   display: flex;
@@ -72,32 +64,26 @@ body {
   z-index: 20;
   background: transparent;
   border-left: 6px solid rgba(0,0,0,0.03);
-}
 
-/* Left page visual background (pseudo-element) anchored to left edge,
-   sized to fully fill the left panel width (keeps aspect ratio) */
-.left-page::before {
-  content: "";
-  position: absolute;
-  /* fill the exact left panel box (ignores padding) */
-  top: var(--gutter);
-  left: var(--gutter);
-  bottom: var(--gutter);
-  width: calc((100% - (var(--gutter) * 2)) / 2 - (var(--spine) / 2));
-  z-index: 12; /* below page content */
-  pointer-events: none;
+  /* Mirror of right-page background setup */
   background-image: url("assets/leftpage.png");
-  background-position: left center;
+  background-size: contain;      /* same as right pages */
+  background-position: center;   /* center like the right pages */
   background-repeat: no-repeat;
-  background-size: 100% auto; /* fill width, keep aspect */
   background-color: rgba(251,247,239,0.95);
 }
 
-/* Ensure left content sits above the pseudo-element */
+/* Ensure left content sits above the background */
 .left-page .left-page-section,
 .left-page .page-content { position: relative; z-index: 80; }
+.left-page .left-page-section h2 {
+  margin: 0 0 12px 0;
+  font-size: 28px;
+  font-family: "Carrotflower", "Amatic SC", sans-serif;
+  line-height: 1.05;
+}
 
-/* RIGHT PAGES container: right half of the spread */
+/* RIGHT PAGES container */
 .pages {
   position: absolute;
   top: var(--gutter);
@@ -129,7 +115,7 @@ body {
   background-color: rgba(251,247,239,0.95);
 }
 
-/* Default right-page background */
+/* Default right-page background (as before) */
 .pages .page {
   background-image: url("assets/rightpage.png");
   background-size: contain;
@@ -137,10 +123,7 @@ body {
   background-repeat: no-repeat;
 }
 
-/* COVER specifics
-   - When open, cover sits on the right half and is rotated by JS.
-   - When closed, we center the cover in the visible viewport (so it looks like a closed book prompt).
-*/
+/* COVER specifics */
 .cover {
   z-index: 200;
   right: var(--gutter);
@@ -167,8 +150,7 @@ body {
   background-color: transparent;
 }
 
-/* CLOSED cover centered across the full stage (not just the right half)
-   keep it visually the same width as a single page for the "closed book" look */
+/* CLOSED cover centered across the full stage */
 .sketchbook:not(.open) .cover {
   left: 50%;
   transform: translateX(-50%) rotateY(0deg) !important;
@@ -176,7 +158,7 @@ body {
   right: auto;
 }
 
-/* OPEN cover returns to the right half (JS handles rotation) */
+/* OPEN cover returns to right half */
 .sketchbook.open .cover {
   left: auto;
   right: var(--gutter);
@@ -234,7 +216,7 @@ body {
   font-family: "Carrotflower", "Amatic SC", sans-serif;
 }
 
-/* top-right menu visibility rules (unchanged) */
+/* top-right menu visibility */
 .sketchbook:not(.open) #pageMenu { display: none !important; pointer-events: none !important; opacity: 0 !important; }
 .sketchbook.open #pageMenu { display: flex !important; pointer-events: auto !important; opacity: 1 !important; }
 
@@ -289,15 +271,8 @@ body {
     right: 0;
     height: auto;
   }
-  .left-page::before {
-    /* make the left background image behave like a normal block on narrow screens */
-    position: relative;
-    inset: auto;
-    width: 100%;
-    height: 200px;
-    background-position: center;
-    background-size: cover;
-  }
+  .left-page { padding: 12px 12px 24px; }
+  .left-page::before { display: none; } /* ensure no residual pseudo-element */
   .pages .page { background-size: cover; }
   .cover::before { background-size: cover; }
   .sketchbook { min-height: auto; padding: 12px; }
