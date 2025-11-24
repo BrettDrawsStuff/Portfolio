@@ -218,25 +218,3 @@ body { font-family: var(--font-main); color: var(--ink); -webkit-font-smoothing:
   .controls { position: static; transform: none; margin: 12px 0; }
   #pageMenu { position: sticky; top: 8px; right: 8px; }
 }
-
-/* when book is open, pin page content to the top-center */
-.sketchbook.open .pages {
-  /* move content to the top of the page area instead of vertically centered */
-  align-items: flex-start !important;
-  justify-content: center !important; /* keep horizontal centering */
-  padding-top: 36px; /* space from top; increase/decrease to taste */
-}
-
-.sketchbook.open .page-content {
-  /* ensure the page-content block stays centered horizontally */
-  margin: 0 auto !important;
-  text-align: center !important;
-  width: 100%;
-  max-width: 1000px;
-}
-
-.sketchbook.open .page-content h2 {
-  /* tighten spacing for top-aligned title */
-  margin-top: 0 !important;
-  margin-bottom: 10px !important;
-}
