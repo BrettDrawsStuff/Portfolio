@@ -1,4 +1,4 @@
-/* Styles for the full-page sketchbook (no JS scaling) */
+/* Styles with explicit <img> fallbacks for backgrounds */
 
 /* Load fallback font for development; Carrotflower loaded via Typekit kit in index.html */
 @import url('https://fonts.googleapis.com/css2?family=Amatic+SC:wght@400;700&display=swap');
@@ -7,17 +7,16 @@
   --paper:#fbf7ef;
   --edge:#d8cbb9;
   --ink:#1b1b1b;
-  --spine: 12px; /* gutter width */
+  --spine: 12px;
 }
 
-/* Reset & full-screen stage */
-html,body,#app{height:100%;margin:0;font-family:"Carrotflower", "Amatic SC", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue"; -webkit-font-smoothing:antialiased; background:var(--paper); overflow:hidden;}
+/* Reset & stage */
+html,body,#app{height:100%;margin:0;font-family:"Carrotflower","Amatic SC",system-ui; -webkit-font-smoothing:antialiased; background:var(--paper); overflow:hidden;}
 .paper-bg{position:fixed;inset:0;z-index:-1;background:
     linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 40%),
     url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"><rect fill="%23fbf7ef" width="100%" height="100%"/></svg>');}
 
-/* Sketchbook container: centered and uses viewport but no JS scaling.
-   The container remains centered on closed and open states. */
+/* Sketchbook container */
 .sketchbook{
   width: min(1100px, 96vw);
   height: min(760px, 88vh);
@@ -28,7 +27,26 @@ html,body,#app{height:100%;margin:0;font-family:"Carrotflower", "Amatic SC", sys
   overflow: visible;
 }
 
-/* LEFT SIDE (static) */
+/* Images used as fallbacks are placed absolutely and cover their container. They sit behind content. */
+.cover-img,
+.left-bg-img,
+.right-bg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  z-index: 10; /* behind content (content uses higher z-index) */
+  pointer-events: none;
+  background-color: transparent;
+}
+
+/* Ensure the cover image sits under the cover content, and when cover hidden, img can still show */
+.cover .cover-img { z-index: 50; }
+.cover .cover-art { z-index: 60; position: relative; }
+
+/* Left side */
 .left-page{
   position:absolute;
   left:0;
@@ -38,14 +56,13 @@ html,body,#app{height:100%;margin:0;font-family:"Carrotflower", "Amatic SC", sys
   padding:28px;
   background:var(--paper);
   border-left:6px solid rgba(0,0,0,0.03);
-  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.02);
   display:flex;
   align-items:flex-start;
   justify-content:flex-start;
   z-index:20;
 }
 
-/* RIGHT SIDE (pages container) */
+/* Right side */
 .pages{
   position:absolute;
   right:0;
@@ -56,53 +73,49 @@ html,body,#app{height:100%;margin:0;font-family:"Carrotflower", "Amatic SC", sys
   z-index:30;
 }
 
-/* Page & cover base rules, each fills the right half */
+/* Individual pages / cover */
 .page, .cover {
   position:absolute;
   top:0; bottom:0;
   width:100%;
   height:100%;
-  background:var(--paper);
+  background:transparent; /* background image is now via <img> fallback */
   box-shadow: 0 24px 60px rgba(17,17,17,0.18);
   border: 2px solid var(--edge);
   overflow:hidden;
   transform-origin:left center;
   backface-visibility:hidden;
   border-right:6px solid rgba(0,0,0,0.02);
+  padding:28px;
+  box-sizing:border-box;
   display:flex;
   align-items:flex-start;
   justify-content:flex-start;
-  padding:28px;
-  box-sizing:border-box;
 }
 
-/* Cover specifics */
+/* cover specifics */
 .cover{
   z-index:200;
-  background-size:cover;
-  background-position:center;
-  background-repeat:no-repeat;
   display:flex;
   align-items:center;
   justify-content:center;
 }
 
-/* page-content and headings */
+/* content & headings */
 .page-content {
   width:100%;
   color:var(--ink);
-  background:rgba(255,255,255,0.0); /* transparent to show rightpage.png */
   font-size:20px;
-  box-sizing:border-box;
+  z-index: 80; /* ensure content overlays fallback images */
+  position: relative;
 }
 .page-content h2 {
   margin: 0 0 12px 0;
   font-size:28px;
-  font-weight:700;
-  font-family: "Carrotflower", "Amatic SC", sans-serif;
+  font-family:"Carrotflower", "Amatic SC", sans-serif;
 }
 
-/* controls centered at bottom (arrow buttons) */
+/* controls */
 .controls {
   position:absolute;
   left:50%;
@@ -112,19 +125,23 @@ html,body,#app{height:100%;margin:0;font-family:"Carrotflower", "Amatic SC", sys
   gap:12px;
   z-index:500;
 }
-.controls button {
-  background:var(--paper);
-  border:2px solid #cbb79f;
-  padding:8px 12px;
-  border-radius:6px;
-  font-size:18px;
-  cursor:pointer;
+.controls button { background:var(--paper); border:2px solid #cbb79f; padding:8px 12px; border-radius:6px; font-size:18px; cursor:pointer; }
+
+/* image error overlay */
+.image-error {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  transform: translateX(-50%);
+  background: rgba(255,80,80,0.95);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  z-index: 900;
+  font-weight:700;
 }
 
-/* Menu area (JS injects #pageMenu into the sketchbook) */
-#pageMenu { position:absolute; top:12px; right:14px; z-index:500; pointer-events:auto; }
-
-/* Visual central spine gutter */
+/* spine gutter */
 .sketchbook::before {
   content: "";
   position: absolute;
@@ -137,7 +154,7 @@ html,body,#app{height:100%;margin:0;font-family:"Carrotflower", "Amatic SC", sys
   z-index:40;
 }
 
-/* small screens tweaks */
+/* small screens */
 @media (max-width:640px) {
   .sketchbook{ width: calc(100vw - 20px); height: calc(100vh - 20px); margin:10px auto; }
   .page-content { font-size:16px; padding:18px; }
