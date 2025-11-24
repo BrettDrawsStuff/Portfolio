@@ -1,10 +1,7 @@
 /* style.css
-   Full replacement ensuring Enter button uses Carrotflower font.
-   - Closed state: full-viewport cover (assets/bookcover.jpg) with centered cover-art.
-   - Open state: full-spread background (assets/backgroundpaper.png) behind UI.
-   - Page titles at top-center when open.
-   - Top-right menu (icon-only until clicked) and bottom arrow controls are on top.
-   - Key change: the Enter button explicitly uses the Carrotflower font via --font-main.
+   Full-file replacement — authoritative.
+   Key change: Carrotflower is enforced as the sole font used everywhere (including the Enter button).
+   Replace your current style.css with this file and hard-refresh (Cmd/Ctrl+Shift+R).
 */
 
 :root{
@@ -19,10 +16,22 @@
   --title-top-offset: 32px; /* distance from the top for page titles when open */
 }
 
+/* -------------------------
+   FONT: enforce Carrotflower everywhere
+   -------------------------
+   Carrotflower is loaded via the Adobe kit in index.html.
+   We force it globally so no other fonts are used.
+*/
+html, body, #app, * {
+  font-family: var(--font-main) !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+}
+
 /* Reset / base */
 * { box-sizing: border-box; }
-html, body, #app { height: 100%; margin: 0; background: var(--paper); -webkit-font-smoothing: antialiased; }
-body { font-family: var(--font-main); color: var(--ink); -webkit-font-smoothing: antialiased; }
+html, body, #app { height: 100%; margin: 0; background: var(--paper); }
+body { color: var(--ink); }
 
 /* Decorative paper background (non-interfering) */
 .paper-bg {
@@ -82,9 +91,9 @@ body { font-family: var(--font-main); color: var(--ink); -webkit-font-smoothing:
   text-shadow: 0 6px 18px rgba(0,0,0,0.45);
 }
 
-/* ENTER BUTTON: explicitly use Carrotflower (via --font-main) */
-.sketchbook:not(.open) .enter-btn,
-.enter-btn {
+/* ENTER BUTTON: explicitly use Carrotflower and be visually consistent */
+.enter-btn,
+.sketchbook:not(.open) .enter-btn {
   pointer-events: auto;
   display: inline-block;
   padding: 12px 24px;
@@ -97,14 +106,15 @@ body { font-family: var(--font-main); color: var(--ink); -webkit-font-smoothing:
   box-shadow: 0 8px 24px rgba(0,0,0,0.45);
   -webkit-backdrop-filter: blur(3px);
   backdrop-filter: blur(3px);
-  font-family: var(--font-main) !important; /* <-- key change: enforce Carrotflower */
+  font-family: var(--font-main) !important; /* enforcement for Enter button */
   line-height: 1.05;
 }
 
 /* hide pages/menu/controls while closed */
 .sketchbook:not(.open) .pages,
 .sketchbook:not(.open) #pageMenu,
-.sketchbook:not(.open) .controls {
+.sketchbook:not(.open) .controls,
+.sketchbook:not(.open) .left-page {
   display: none !important;
   pointer-events: none !important;
   opacity: 0 !important;
@@ -150,6 +160,7 @@ body { font-family: var(--font-main); color: var(--ink); -webkit-font-smoothing:
   align-items: flex-start;
   justify-content: center;
   overflow: hidden;
+  pointer-events: none;
 }
 
 /* individual page */
@@ -173,17 +184,17 @@ body { font-family: var(--font-main); color: var(--ink); -webkit-font-smoothing:
   width: min(1000px, 94%);
   text-align: center;
   pointer-events: auto;
-  z-index: 12;
+  z-index: 12; /* above background */
 }
 
 /* H2: page title styling (black Carrotflower) */
 .page-content h2 {
   margin: 0 0 8px 0;
   font-size: clamp(22px, 4.8vw, 44px);
-  font-family: var(--font-main);
   color: #000;
   font-weight: 700;
   line-height: 1.05;
+  font-family: var(--font-main) !important; /* ensure H2 uses Carrotflower */
 }
 
 /* optional body area under the title */
@@ -191,6 +202,7 @@ body { font-family: var(--font-main); color: var(--ink); -webkit-font-smoothing:
   margin-top: 12px;
   color: #222;
   font-size: 16px;
+  font-family: var(--font-main) !important;
 }
 
 /* Controls at bottom center (visible when open) */
@@ -212,8 +224,8 @@ body { font-family: var(--font-main); color: var(--ink); -webkit-font-smoothing:
   padding: 8px 12px;
   border-radius: 8px;
   cursor: pointer;
-  font-family: var(--font-main);
   font-size: 18px;
+  font-family: var(--font-main) !important;
 }
 
 /* Page menu: top-right, visible when open */
@@ -229,17 +241,9 @@ body { font-family: var(--font-main); color: var(--ink); -webkit-font-smoothing:
 .sketchbook.open #pageMenu { display: flex !important; pointer-events: auto; }
 
 /* menu icon styling */
-#pageMenu .menu-btn {
-  font-family: var(--font-main);
-  font-size: 18px;
-  padding: 8px;
-  border-radius: 6px;
-  border: 2px solid rgba(0,0,0,0.12);
-  background: rgba(255,255,255,0.95);
-  cursor: pointer;
-}
+#pageMenu .menu-btn { font-size: 18px; padding: 8px; border-radius: 6px; border: 2px solid rgba(0,0,0,0.12); background: rgba(255,255,255,0.95); cursor: pointer; font-family: var(--font-main) !important; }
 
-/* menu options (hidden until the menu is opened) */
+/* menu options */
 #pageMenu .menu-options {
   display: none;
   position: absolute;
@@ -256,18 +260,7 @@ body { font-family: var(--font-main); color: var(--ink); -webkit-font-smoothing:
   z-index: 401;
 }
 #pageMenu.open .menu-options { display: flex; }
-
-/* option styling */
-#pageMenu .menu-options button {
-  text-align: left;
-  background: transparent;
-  border: none;
-  padding: 8px 10px;
-  cursor: pointer;
-  font-family: var(--font-main);
-  font-size: 15px;
-  color: var(--ink);
-}
+#pageMenu .menu-options button { text-align: left; background: transparent; border: none; padding: 8px 10px; cursor: pointer; font-size: 15px; color: var(--ink); font-family: var(--font-main) !important; }
 #pageMenu .menu-options button:hover { background: rgba(0,0,0,0.04); border-radius:4px; }
 
 /* ensure page H2s remain visible above any other layer */
