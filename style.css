@@ -1,7 +1,6 @@
 /* style.css
-   Updated stylesheet: ensures cover background is rendered via a pseudo-element so
-   the cover image is never obscured by child content. Also keeps the previous
-   layout (closed centered cover sized like left page, left/right backgrounds, etc.)
+   Updated stylesheet: keeps previous layout and backgrounds, and hides the top-right page menu
+   while the sketchbook is closed. The menu becomes visible only when the book is opened.
 */
 
 /* Typekit Carrotflower is loaded in index.html. Fallback to Amatic SC if missing. */
@@ -12,8 +11,6 @@
   --spine: 12px;
   --max-width: 1100px;
   --max-height: 760px;
-  /* cover URL can be injected via inline style: element.style.setProperty('--cover-url', "url('...')") */
-  --cover-url: url("assets/bookcover.jpg");
 }
 
 /* Reset and base */
@@ -62,7 +59,6 @@ body {
   justify-content: flex-start;
   z-index: 20;
 
-  /* background image for left page */
   background-image: url("assets/leftpage.png");
   background-size: contain;
   background-position: center;
@@ -128,22 +124,21 @@ body {
   right: 0;
   left: auto;
   width: calc(50% - (var(--spine) / 2));
-  /* keep the CSS background as fallback; primary cover image visual is provided by ::before */
   background-color: transparent;
   transition: all 320ms ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative; /* required for ::before positioning */
+  position: relative;
 }
 
-/* Pseudo-element used to render the cover image below .cover-art so children don't obscure it */
+/* Use pseudo-element for cover image so overlay content cannot obscure it */
 .cover::before {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 10; /* below .cover-art (which will have z-index: 20) */
-  background: var(--cover-url) center/contain no-repeat;
+  z-index: 10;
+  background: url("assets/bookcover.jpg") center/contain no-repeat;
   background-color: transparent;
   pointer-events: none;
 }
@@ -175,7 +170,7 @@ body {
   pointer-events: none;
   width: 100%;
   max-width: calc(50% - (var(--spine) / 2) - 56px);
-  background: transparent; /* ensure no opaque background */
+  background: transparent;
 }
 .cover-art .cover-title {
   margin: 0;
@@ -245,6 +240,21 @@ button, select, .nav-item {
   border-radius: 6px;
   font-size: 18px;
   cursor: pointer;
+}
+
+/* ---- NEW: hide page menu while the book is closed ----
+   The #pageMenu element is injected by JS. This rule keeps it hidden (and non-interactive)
+   until the sketchbook has the .open class (i.e., user clicked Enter to open the book). */
+.sketchbook:not(.open) #pageMenu {
+  display: none !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+}
+/* When book is open, show the menu (when JS toggles .open) */
+.sketchbook.open #pageMenu {
+  display: flex !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
 }
 
 /* spine gutter */
