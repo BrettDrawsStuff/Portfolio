@@ -1,12 +1,7 @@
 /* style.css
-   Full-file replacement (authoritative).
-   - Closed state: full-viewport cover (assets/bookcover.jpg) with centered cover-art.
-   - Open state: full-spread background (assets/backgroundpaper.png) *behind* the UI.
-   - Page titles moved to the top-center of the page area when open.
-   - Page titles use the Carrotflower font and are black.
-   - Top-right dropdown menu visible when open.
-   - Bottom-centered prev/next controls visible when open and auto-hide at edges (JS).
-   - Responsive fallbacks for small screens.
+   Full-file replacement (authoritative). Small change: the page menu's SELECT is hidden
+   by default so only the menu icon is visible until clicked.
+   Other behavior unchanged from previous authoritative file.
 */
 
 :root{
@@ -17,10 +12,11 @@
   --open-bg-url: url("assets/backgroundpaper.png");
   --cover-src: url("assets/bookcover.jpg");
   --font-main: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue";
-  --title-top-offset: 32px; /* how far down from the top the page title sits when open */
+  --max-cover-width: 1100px;
+  --title-top-offset: 32px;
 }
 
-/* Reset + base */
+/* Reset / base */
 * { box-sizing: border-box; }
 html, body, #app { height: 100%; margin: 0; background: var(--paper); -webkit-font-smoothing: antialiased; }
 body { font-family: var(--font-main); color: var(--ink); -webkit-font-smoothing: antialiased; }
@@ -144,11 +140,10 @@ body { font-family: var(--font-main); color: var(--ink); -webkit-font-smoothing:
   bottom: var(--gutter);
   z-index: 10; /* above background */
   display: flex;
-  /* place content at the top center when open */
-  align-items: flex-start;
+  align-items: flex-start; /* top-center placement */
   justify-content: center;
   overflow: hidden;
-  pointer-events: none; /* page wrappers non-interactive; content is */
+  pointer-events: none;
 }
 
 /* individual page */
@@ -215,7 +210,9 @@ body { font-family: var(--font-main); color: var(--ink); -webkit-font-smoothing:
   font-size: 18px;
 }
 
-/* Top-right page menu (visible when open) */
+/* Top-right page menu (visible when open).
+   IMPORTANT: select is hidden by default so only the icon shows until clicked.
+*/
 #pageMenu {
   position: absolute;
   top: 12px;
@@ -226,7 +223,19 @@ body { font-family: var(--font-main); color: var(--ink); -webkit-font-smoothing:
   align-items: center;
 }
 .sketchbook.open #pageMenu { display: flex !important; pointer-events: auto; }
-#pageMenu button, #pageMenu select {
+
+/* Make the button (icon) visible by default; keep select hidden */
+#pageMenu button {
+  font-family: var(--font-main);
+  font-size: 16px;
+  padding: 8px;
+  border-radius: 6px;
+  border: 2px solid rgba(0,0,0,0.12);
+  background: rgba(255,255,255,0.95);
+  cursor: pointer;
+}
+#pageMenu select {
+  display: none; /* key change: keep the dropdown hidden until the user clicks the icon */
   font-family: var(--font-main);
   font-size: 16px;
   padding: 8px;
@@ -246,11 +255,8 @@ body { font-family: var(--font-main); color: var(--ink); -webkit-font-smoothing:
 }
 @media (max-width: 560px) {
   .sketchbook { padding: 12px; }
-  /* closed cover becomes relative so it doesn't force a fixed full-bleed */
   .sketchbook:not(.open) .cover { position: relative !important; height: auto !important; }
-  /* avoid forcing full-spread on tiny screens */
   .sketchbook.open::before { display: none !important; }
-  /* stack pages for readability on small screens */
   .pages { position: relative; top: auto; left: auto; right: auto; bottom: auto; height: auto; align-items: stretch; }
   .pages .page.active { display: block; }
   .page-content { position: relative; transform: none; left: auto; top: 12px; margin: 0 auto; }
