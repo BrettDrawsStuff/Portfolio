@@ -1,10 +1,7 @@
 // script.js
-// Behavior:
-// - No global scaling.
-// - Left/right spread sync logic as before.
-// - Ensure cover background is applied reliably.
-// - NEW: hide the left arrow on the first (Home) spread and hide the right arrow on the last (Demo Reel) spread.
-//   Buttons are updated after navigation, on open, and at initial load.
+// Updated to set an --open-bg-url CSS variable on the sketchbook element so the CSS
+// .sketchbook.open::before uses the rightpage.png as the full-spread background when open.
+// Also preserves previous behavior (cover background, left/right sync, flipping, menu visibility).
 
 const enterBtn = document.getElementById('enterBtn');
 const sketchbook = document.getElementById('sketchbook');
@@ -80,7 +77,7 @@ function syncLeftForIndex(index) {
   }
 }
 
-// Apply inline backgrounds for left/right as fallback
+// Apply inline backgrounds for left/right as fallback (kept for safety)
 function applyInlineBackgrounds() {
   if (leftPage) {
     leftPage.style.backgroundImage = `url('${LEFT_SRC}')`;
@@ -114,35 +111,31 @@ function ensureCoverBackground() {
   img.src = COVER_SRC;
 }
 
-// ---------- NEW: update controls visibility ----------
-function updateControlsVisibility() {
-  // Hide left arrow on first page, hide right arrow on last page.
-  // Use display none to "remove" the button visually as requested.
-  if (!controls) return;
+// Set the open state background variable so CSS can show the full-spread rightpage image
+function applyOpenBackgroundVariable() {
+  if (!sketchbook) return;
+  sketchbook.style.setProperty('--open-bg-url', `url('${RIGHT_SRC}')`);
+}
 
-  // If the book is closed, keep controls hidden until opened
+// ---------- controls visibility helper (unchanged) ----------
+function updateControlsVisibility() {
+  if (!controls) return;
   if (!sketchbook.classList.contains('open')) {
     controls.style.display = 'none';
     return;
   }
-
-  // Book is open: show controls container
   controls.style.display = 'flex';
-
-  // Prev button: hide when on first page
   if (current <= 0) {
     prevBtn.style.display = 'none';
     prevBtn.setAttribute('aria-hidden', 'true');
     prevBtn.setAttribute('aria-disabled', 'true');
     prevBtn.disabled = true;
   } else {
-    prevBtn.style.display = ''; // allow CSS default
+    prevBtn.style.display = '';
     prevBtn.removeAttribute('aria-hidden');
     prevBtn.removeAttribute('aria-disabled');
     prevBtn.disabled = false;
   }
-
-  // Next button: hide when on last page
   if (current >= maxIndex) {
     nextBtn.style.display = 'none';
     nextBtn.setAttribute('aria-hidden', 'true');
@@ -161,16 +154,15 @@ function setInitialView() {
   applyInlineBackgrounds();
   syncLeftForIndex(0);
   ensureCoverBackground();
+  applyOpenBackgroundVariable(); // set the CSS variable for the open background
 
   const coverTitle = cover.querySelector('.cover-title');
   if (coverTitle) coverTitle.textContent = "Brett's Portfolio";
 
   if (leftPage) leftPage.style.display = 'none';
   if (pagesContainer) pagesContainer.style.display = 'none';
-  // controls are hidden initially until open
   if (controls) controls.style.display = 'none';
 
-  // ensure menu hidden (menu logic elsewhere controls this too)
   hidePageMenu?.();
 
   cover.style.transform = 'rotateY(0deg)';
@@ -179,12 +171,11 @@ function setInitialView() {
     p.style.zIndex = (100 - i);
   });
 
-  // Ensure arrows are in the correct initial state (book closed -> controls hidden)
   updateControlsVisibility();
 }
 setInitialView();
 
-// Build compact menu (hamburger + select)
+// menu creation (unchanged)
 function createPageMenu() {
   const existing = document.getElementById('pageMenu');
   if (existing) existing.remove();
@@ -234,7 +225,6 @@ function createPageMenu() {
 }
 createPageMenu();
 
-// Show/hide page menu helpers (used elsewhere in the code)
 function showPageMenu() {
   const menu = document.getElementById('pageMenu');
   if (!menu) return;
@@ -250,7 +240,7 @@ function hidePageMenu() {
   menu.style.pointerEvents = 'none';
 }
 
-// Open book animation: reveal left & right pages while rotating cover
+// open animation: reveal left & right pages while rotating cover
 async function openAndReveal() {
   if (sketchbook.classList.contains('open')) {
     if (controls) controls.style.display = 'flex';
@@ -270,12 +260,13 @@ async function openAndReveal() {
     onStart: () => {
       sketchbook.classList.add('open');
       cover.setAttribute('aria-pressed', 'true');
+      // ensure the open-background variable is set (safe)
+      applyOpenBackgroundVariable();
     },
     onComplete: () => {
       if (controls) controls.style.display = 'flex';
       if (leftPage) leftPage.style.opacity = '';
       if (pagesContainer) pagesContainer.style.opacity = '';
-      // reveal menu and update controls after open completes
       showPageMenu();
       updateControlsVisibility();
     }
@@ -288,7 +279,7 @@ async function openAndReveal() {
   await new Promise(res => setTimeout(res, 1100));
 }
 
-// Close book: hide left/right and reset cover; hide menu and update controls
+// close: hide left/right and reset cover; hide menu and update controls
 function closeAndHide() {
   if (!sketchbook.classList.contains('open')) return;
   if (controls) controls.style.display = 'none';
@@ -300,7 +291,6 @@ function closeAndHide() {
       if (leftPage) leftPage.style.display = 'none';
       if (pagesContainer) pagesContainer.style.display = 'none';
       cover.style.transform = 'rotateY(0deg)';
-      // hide the menu when the book is closed and update controls (controls hidden when closed)
       hidePageMenu();
       updateControlsVisibility();
     }
@@ -319,7 +309,7 @@ enterBtn.addEventListener('click', async () => {
   }
 });
 
-// Page flip logic (right pages flip, left is synced)
+// Page flip logic (unchanged)
 let current = 0;
 const maxIndex = pages.length - 1;
 let flipping = false;
@@ -406,7 +396,7 @@ async function goToPage(target) {
   updateControlsVisibility();
 }
 
-// Keyboard controls
+// keyboard
 document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowRight') nextBtn.click();
   if (e.key === 'ArrowLeft') prevBtn.click();
@@ -419,7 +409,7 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// Ambient doodles (unchanged)
+// ambient doodles (unchanged)
 gsap.utils.toArray('.floating').forEach((el, i) => {
   gsap.to(el, {
     y: (i + 1) * 10,
@@ -432,10 +422,11 @@ gsap.utils.toArray('.floating').forEach((el, i) => {
   });
 });
 
-// Ensure cover + backgrounds are applied when the page loads, and update control visibility
+// Ensure cover + backgrounds are applied when the page loads, and set open background variable
 window.addEventListener('load', () => {
   ensureCoverBackground();
   applyInlineBackgrounds();
+  applyOpenBackgroundVariable();
   syncLeftForIndex(current);
   updateControlsVisibility();
 });
