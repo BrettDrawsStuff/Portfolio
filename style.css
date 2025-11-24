@@ -1,7 +1,6 @@
-/* Prototype styles for the sketchbook portfolio */
-
-/* Using Adobe Fonts kit for Carrotflower: loaded via the kit link in index.html */
-/* If you later want to self-host, move font files to fonts/ and add an @font-face block. */
+/* Prototype styles for the sketchbook portfolio
+   Updated to scale the sketchbook to full-screen while preserving
+   the design proportions and scaling all contents uniformly. */
 
 /* fallback handwriting font included */
 @import url('https://fonts.googleapis.com/css2?family=Amatic+SC:wght@400;700&display=swap');
@@ -10,32 +9,81 @@
   --paper:#fbf7ef;
   --edge:#d8cbb9;
   --ink:#1b1b1b;
+
+  /* design dimensions (in px) - change here if you redesign the artboard */
+  --design-w: 1000;
+  --design-h: 680;
+
+  /* visual spine between left and right halves (px at design scale) */
+  --spine: 12px;
 }
 
-*{box-sizing:border-box}
-html,body,#app{height:100%;margin:0;font-family:"Carrotflower", "Amatic SC", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue"; -webkit-font-smoothing:antialiased;}
+/* stage/app fills viewport and centers sketchbook */
+html,body{height:100%;margin:0;-webkit-font-smoothing:antialiased;}
+#app {
+  width:100vw;
+  height:100vh;
+  position:relative;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:var(--paper);
+}
 
+/* background paper texture behind the scaled sketchbook */
 .paper-bg{
-  position:fixed;inset:0;background:
+  position:fixed;inset:0;z-index:-1;
+  background:
     linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 40%),
     url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"><rect fill="%23fbf7ef" width="100%" height="100%"/></svg>');
-  z-index:-1;
 }
 
+/* the sketchbook uses fixed design dimensions and will be scaled with transform */
 .sketchbook{
-  width:min(1000px,96vw);
-  height:min(680px,86vh);
-  margin:3vh auto;
+  width:var(--design-w)px;
+  height:var(--design-h)px;
+  margin:0; /* centered by #app flexbox */
   perspective:1600px;
   position:relative;
+  transform-origin:center center; /* scale origin */
+  transform: scale(1); /* will be updated via JS */
+  transition: transform 0.08s linear;
   transform-style:preserve-3d;
 }
 
-/* pages & cover */
+/* Book spread sizing tweak: ensure both halves match visually.
+   Left and right halves subtract half the visual spine so total remains design width. */
+.left-page {
+  left: 0;
+  width: calc(50% - (var(--spine) / 2));
+  transform-origin: right center;
+  border-left: 6px solid rgba(0,0,0,0.03);
+  padding: 20px;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--paper);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* Right side stack matches the left side exactly */
+.pages{ 
+  right: 0;
+  width: calc(50% - (var(--spine) / 2));
+  height: 100%;
+  position: absolute;
+  top: 0;
+  transform-style: preserve-3d;
+}
+
+/* page & cover base rules */
 .page, .pages .page {
   position:absolute;
   top:0;bottom:0;
-  width:50%;
+  width:100%; /* individual page occupies the right half container */
   height:100%;
   background:var(--paper);
   box-shadow: 0 20px 60px rgba(17,17,17,0.25);
@@ -49,24 +97,21 @@ html,body,#app{height:100%;margin:0;font-family:"Carrotflower", "Amatic SC", sys
   justify-content:center;
 }
 
-/* left page */
-.left-page{
-  left:0;
-  width:50%;
-  transform-origin:right center;
-  border-left:6px solid rgba(0,0,0,0.03);
-  padding:20px;
-}
-
-/* right-side pages stack */
-.pages{ right:0; width:50%; height:100%; position:absolute; top:0; transform-style:preserve-3d; }
-
-/* cover on right */
+/* cover aligned to right half container (it sits on top of .pages) */
 .cover{
-  right:0; width:50%; z-index:50; transform-origin:left center; display:flex; align-items:center; justify-content:center;
+  right:0;
+  width: calc(50% - (var(--spine) / 2));
+  z-index:50;
+  transform-origin:left center;
+  display:flex;
+  align-items:center;
+  justify-content:center;
   background:linear-gradient(180deg,#f5e9dc,#f0e0cb);
   border:3px solid #cdb8a3;
   transform:rotateY(0deg);
+  position:absolute;
+  top:0;
+  bottom:0;
 }
 
 /* content */
@@ -106,55 +151,7 @@ html,body,#app{height:100%;margin:0;font-family:"Carrotflower", "Amatic SC", sys
 .sketchbook.open .cover{transform:rotateY(-160deg); transition:transform 1.2s cubic-bezier(.2,.9,.2,1)}
 .sketchbook.open .left-page{ transform:translateX(-6px) }
 
-/* responsive */
-@media (max-width:800px){
-  .sketchbook{height:82vh}
-  .page-content{font-size:18px}
-  .left-nav{flex-direction:row;flex-wrap:wrap;gap:6px}
-  .left-nav .nav-item{font-size:14px;padding:6px 8px}
-}
-
-/* Book spread sizing tweak: ensure both halves match visually */
-:root {
-  /* Adjust this for a wider or narrower spine between left/right */
-  --spine: 12px;
-}
-
-/* Make the left and right halves share the same visual width,
-   subtracting half the visible spine from each side so the total remains 100%. */
-.left-page {
-  left: 0;
-  width: calc(50% - (var(--spine) / 2));
-  transform-origin: right center;
-  border-left: 6px solid rgba(0,0,0,0.03);
-  padding: 20px;
-}
-
-/* Right side stack matches the left side exactly */
-.pages {
-  right: 0;
-  width: calc(50% - (var(--spine) / 2));
-  height: 100%;
-  position: absolute;
-  top: 0;
-  transform-style: preserve-3d;
-}
-
-/* Cover should align with the pages width so flips look balanced */
-.cover {
-  right: 0;
-  width: calc(50% - (var(--spine) / 2));
-  z-index: 50;
-  transform-origin: left center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(180deg,#f5e9dc,#f0e0cb);
-  border: 3px solid #cdb8a3;
-  transform: rotateY(0deg);
-}
-
-/* Slight visual spine shadow so the center reads as a book gutter */
+/* visual spine gutter */
 .sketchbook::before {
   content: "";
   position: absolute;
@@ -166,4 +163,16 @@ html,body,#app{height:100%;margin:0;font-family:"Carrotflower", "Amatic SC", sys
   background: linear-gradient(90deg, rgba(0,0,0,0.04), rgba(0,0,0,0.02) 40%, rgba(0,0,0,0.00));
   z-index: 40;
   mix-blend-mode: multiply;
+}
+
+/* responsive adjustments (if viewport becomes extremely narrow, allow scroll) */
+@media (max-aspect-ratio: 1000/680) {
+  /* If the viewport is very tall and narrow, allow the sketchbook to remain centered and scale to width */
+}
+
+/* small tweaks for small screens */
+@media (max-width:480px) {
+  .page-content{ font-size:16px }
+  .controls button{ font-size:16px; padding:6px 10px }
+  .thumb{ width:140px; height:100px }
 }
