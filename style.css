@@ -1,76 +1,57 @@
 /* style.css
-   Fix: Closed-cover now displays as a full-viewport cover (bookcover.jpg)
-   with the cover title/subtitle/Enter button centered and sized for visibility.
-   When the book opens, the cover returns to its right-page role and the
-   open-state backgroundpaper.png behavior is preserved.
+   Strong guarantee for CLOSED COVER:
+   - When the book is closed (no .open), the cover fills the viewport with bookcover.jpg
+     (background-size: cover) and the cover title / subtitle / Enter button are centered
+     and scaled responsively.
+   - Other panels are hidden while closed to avoid any white/duplicate UI.
+   - When the book opens, the cover returns to its normal spread role and the open-state
+     backgroundpaper.png behavior is preserved.
+   Replace your current style.css with this file and hard-refresh (Cmd/Ctrl+Shift+R).
 */
 
-/* -------------------------
-   Base variables & reset
-   ------------------------- */
 :root{
   --paper: #fbf7ef;
-  --edge: #d8cbb9;
   --ink: #1b1b1b;
-  --spine: 12px;
-  --page-padding: 28px;
   --gutter: 20px;
   --open-bg-url: url("assets/backgroundpaper.png");
   --cover-src: url("assets/bookcover.jpg");
 }
 
+/* reset */
 * { box-sizing: border-box; }
 html,body,#app { height:100%; margin:0; background:var(--paper); -webkit-font-smoothing:antialiased; }
-body {
-  font-family: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue";
-  color: var(--ink);
-  overflow-y: auto;
-}
+body { font-family: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue"; color:var(--ink); }
 
-/* paper texture */
-.paper-bg {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 40%),
-    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"><rect fill="%23fbf7ef" width="100%" height="100%"/></svg>');
-}
-
-/* full-bleed stage area */
+/* stage */
 .sketchbook {
-  width: 100%;
-  min-height: calc(100vh - (var(--gutter) * 2));
-  padding: var(--gutter);
-  margin: 0;
-  position: relative;
-  transform-style: preserve-3d;
-  overflow: visible;
-  user-select: none;
-  -webkit-user-select: none;
+  width:100%;
+  min-height:100vh;
+  padding:var(--gutter);
+  position:relative;
+  overflow:visible;
+  -webkit-font-smoothing:antialiased;
 }
 
-/* -------------------------------------
-   CLOSED COVER (primary fix)
-   - When sketchbook is NOT .open the cover becomes a full-viewport
-     element showing bookcover.jpg and centers the cover-art (title/button).
-   - This overrides earlier boxed/partial layouts so the start state is full-bleed.
-   ------------------------------------- */
+/* -------------------------
+   CLOSED COVER (definitive)
+   -------------------------
+   This rule must take precedence so the closed cover is a full-viewport background.
+   We force it with !important to avoid overrides from older rules.
+*/
 .sketchbook:not(.open) .cover {
   position: fixed !important;
-  inset: 0 !important;             /* fill the viewport */
-  margin: 0 !important;
+  inset: 0 !important;                    /* fill viewport */
   width: 100% !important;
   height: 100% !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
+  margin: 0 !important;
   left: 0 !important;
   top: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
-  transform: none !important;
-  z-index: 1200 !important;        /* sit above stage but below controls as needed */
+  z-index: 9999 !important;
   background-image: var(--cover-src) !important;
   background-size: cover !important;
   background-position: center center !important;
@@ -78,78 +59,79 @@ body {
   border: none !important;
   box-shadow: none !important;
   pointer-events: auto !important;
+  /* ensure there's no pseudo-element covering it */
 }
+.sketchbook:not(.open) .cover::before { display: none !important; }
 
-/* hide framed panels while closed */
+/* hide left/right panels when closed so nothing shows behind the cover */
 .sketchbook:not(.open) .left-page,
-.sketchbook:not(.open) .pages {
+.sketchbook:not(.open) .pages,
+.sketchbook:not(.open) .pages .page {
   display: none !important;
-  pointer-events: none !important;
   opacity: 0 !important;
+  pointer-events: none !important;
 }
 
-/* make sure the cover overlay content is centered and large enough */
+/* center and style the cover overlay content (title / subtitle / button) */
 .sketchbook:not(.open) .cover-art {
-  position: relative;
-  z-index: 1210; /* above the background image */
+  position: relative !important;
+  z-index: 10000 !important; /* above the background image */
   pointer-events: none;
   text-align: center;
-  width: min(900px, 92vw);
-  padding: 24px;
-  color: #fff; /* likely better contrast on the cover image; adjust if needed */
+  width: min(1000px, 94vw);
+  padding: 16px;
+  margin: 0 auto;
 }
 
-/* title/subtitle/button sizes for closed state */
+/* title sizing and contrast on top of the full-bleed cover */
 .sketchbook:not(.open) .cover-art .cover-title {
-  font-size: clamp(28px, 6vw, 56px);
-  line-height: 1;
   margin: 0 0 8px 0;
-  color: #fff;
-  text-shadow: 0 6px 20px rgba(0,0,0,0.45);
+  font-size: clamp(28px, 6.5vw, 64px);
+  line-height: 1;
+  color: #ffffff;
+  text-shadow: 0 10px 30px rgba(0,0,0,0.55);
 }
+
+/* subtitle */
 .sketchbook:not(.open) .cover-art .subtitle {
-  margin: 0 0 16px 0;
+  margin: 0 0 18px 0;
   font-size: clamp(14px, 2.4vw, 20px);
-  color: rgba(255,255,255,0.92);
-  text-shadow: 0 4px 14px rgba(0,0,0,0.28);
+  color: rgba(255,255,255,0.95);
+  text-shadow: 0 6px 18px rgba(0,0,0,0.35);
 }
+
+/* Enter button (visible and centered) */
 .sketchbook:not(.open) .enter-btn {
   pointer-events: auto;
   display: inline-block;
-  padding: 12px 22px;
-  font-size: clamp(14px, 2.6vw, 20px);
-  border-radius: 8px;
-  border: 2px solid rgba(255,255,255,0.9);
-  background: rgba(0,0,0,0.16);
+  padding: 12px 24px;
+  font-size: clamp(14px, 2.6vw, 22px);
+  border-radius: 10px;
+  border: 2px solid rgba(255,255,255,0.95);
+  background: rgba(0,0,0,0.20);
   color: #fff;
   cursor: pointer;
-  box-shadow: 0 8px 18px rgba(0,0,0,0.35);
+  box-shadow: 0 10px 26px rgba(0,0,0,0.45);
   -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
 }
 
-/* Ensure cover pseudo-element from earlier is not showing over full cover */
-.sketchbook:not(.open) .cover::before { display: none !important; }
-
-/* -------------------------------------
-   OPEN STATE
-   - When book is open, revert cover to its right-half role and show the open background
-   ------------------------------------- */
+/* -------------------------
+   OPEN STATE (keeps previous behavior)
+   ------------------------- */
 .sketchbook.open .cover {
+  /* revert to spread layout; JS may also rotate it */
   position: absolute !important;
-  /* position at right half managed by existing layout; ensure dimensions match earlier layout */
   right: var(--gutter) !important;
   left: auto !important;
   top: var(--gutter) !important;
   bottom: var(--gutter) !important;
-  width: calc((100% - (var(--gutter) * 2)) / 2 - (var(--spine) / 2)) !important;
+  width: calc((100% - (var(--gutter) * 2)) / 2 - 6px) !important; /* approximate single page width */
   height: auto !important;
-  transform: rotateY(-160deg);
-  z-index: 200;
+  transform: none !important;
+  z-index: 200 !important;
   background: transparent !important;
 }
-
-/* full-spread open background using user-provided backgroundpaper.png */
 .sketchbook.open::before {
   content: "";
   position: absolute;
@@ -162,7 +144,7 @@ body {
   pointer-events: none;
 }
 
-/* hide framed visuals when open so backgroundpaper is the primary surface */
+/* hide framed visuals when open so only open backgroundpaper shows */
 .sketchbook.open .left-page,
 .sketchbook.open .pages,
 .sketchbook.open .pages .page {
@@ -183,13 +165,10 @@ body {
   z-index: 1300 !important;
 }
 
-/* -------------------------------------
-   General page / small-screen fallbacks
-   ------------------------------------- */
-/* Ensure page content hidden in open spread to avoid duplicate titles */
+/* hide inner page text in open spread (prevents duplicate titles) */
 .sketchbook.open .page-content { display: none !important; }
 
-/* Very small screens: stacked layout and avoid full-bleed cover forcing */
+/* responsive fallback for small screens: don't force full-viewport cover */
 @media (max-width: 560px) {
   .sketchbook:not(.open) .cover {
     position: relative !important;
@@ -197,15 +176,11 @@ body {
     width: 100% !important;
     height: auto !important;
     padding: 20px;
-    transform: none !important;
+    background-size: cover !important;
   }
   .sketchbook:not(.open) .cover-art { color: var(--ink); text-shadow: none; }
-  .sketchbook.open::before { display: none !important; }
-  .sketchbook.open .left-page, .sketchbook.open .pages { opacity: 1 !important; pointer-events: auto !important; display: block !important; }
+  .sketchbook.open::before { display: none !important; } /* avoid full-bleed on tiny screens */
 }
 
-/* keep interactive controls using Carrotflower */
-button, select, .nav-item {
-  font-family: "Carrotflower", "Amatic SC", sans-serif;
-  -webkit-font-smoothing: antialiased;
-}
+/* ensure interactive controls use Carrotflower */
+button, select, .nav-item { font-family: "Carrotflower", "Amatic SC", sans-serif; -webkit-font-smoothing:antialiased; }
