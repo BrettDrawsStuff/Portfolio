@@ -184,3 +184,24 @@ body { font-family: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Sego
 
 /* ensure interactive controls use Carrotflower */
 button, select, .nav-item { font-family: "Carrotflower", "Amatic SC", sans-serif; -webkit-font-smoothing:antialiased; }
+
+/* QUICK FIX: Hide the cover overlay (title / subtitle / Enter button) when the book is OPEN.
+   Add these rules to the bottom of your existing style.css (they're !important to ensure
+   they override prior rules). This keeps the cover-art centered/fullscreen only while closed. */
+
+.sketchbook.open .cover-art,
+.sketchbook.open .cover-art *,
+.sketchbook.open .cover .cover-title,
+.sketchbook.open .cover .subtitle,
+.sketchbook.open .cover .enter-btn {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Ensure the cover overlay remains visible only when CLOSED */
+.sketchbook:not(.open) .cover-art {
+  display: block !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
