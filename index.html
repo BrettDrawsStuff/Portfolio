@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BrettDrawsStuff — Sketchbook Portfolio</title>
+
+  <!-- Adobe Fonts kit for Carrotflower (your provided kit) -->
+  <link rel="stylesheet" href="https://use.typekit.net/yyq7fwx.css">
+
+  <link rel="stylesheet" href="style.css" />
+  <!-- GSAP for smooth animation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js" defer></script>
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <div id="app">
+    <div class="paper-bg" aria-hidden="true"></div>
+
+    <div class="sketchbook closed" id="sketchbook" role="application" aria-label="Sketchbook portfolio">
+      <!-- left inside (stationary) with nav -->
+      <div class="page left-page" id="left">
+        <div class="page-content">
+          <h3 class="site-title">BrettDrawsStuff</h3>
+          <nav class="left-nav" aria-label="Site sections">
+            <button class="nav-item" data-target="0">Home</button>
+            <button class="nav-item" data-target="1">About Me</button>
+            <button class="nav-item" data-target="2">Digital Art</button>
+            <button class="nav-item" data-target="3">Animations/GIFs</button>
+            <button class="nav-item" data-target="4">Sketchbook</button>
+            <button class="nav-item" data-target="5">Demo Reel</button>
+          </nav>
+          <p class="hint">Use ← → or the buttons to turn pages. Press Enter to open the cover.</p>
+        </div>
+      </div>
+
+      <!-- stack of right-side pages (flippable) -->
+      <div class="pages" id="pages">
+        <div class="page page-0 front" data-page="0">
+          <div class="page-content">
+            <h2>Home</h2>
+            <p>Welcome — brief intro and featured image/teaser.</p>
+            <div class="thumb">Drop a featured image in /assets/featured.jpg</div>
+          </div>
+        </div>
+
+        <div class="page page-1" data-page="1">
+          <div class="page-content">
+            <h2>About Me</h2>
+            <p>Short bio, process notes, contact summary.</p>
+          </div>
+        </div>
+
+        <div class="page page-2" data-page="2">
+          <div class="page-content">
+            <h2>Digital Art</h2>
+            <p>Gallery of finished illustrations and paintings.</p>
+          </div>
+        </div>
+
+        <div class="page page-3" data-page="3">
+          <div class="page-content">
+            <h2>Animations/GIFs</h2>
+            <p>Short looping pieces, sprite GIFs, micro-animations.</p>
+          </div>
+        </div>
+
+        <div class="page page-4" data-page="4">
+          <div class="page-content">
+            <h2>Sketchbook</h2>
+            <p>Rough studies, quick sketches — the well-used pages.</p>
+          </div>
+        </div>
+
+        <div class="page page-5" data-page="5">
+          <div class="page-content">
+            <h2>Demo Reel</h2>
+            <p>Embedded video or link to longer motion/animation reel.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- cover -->
+      <div class="page cover" id="cover" role="button" aria-pressed="false">
+        <div class="cover-art">
+          <h1 class="cover-title">BrettDrawsStuff's Portfolio</h1>
+          <p class="subtitle">a well-used sketchbook</p>
+
+          <button id="enterBtn" class="enter-btn" aria-label="Open sketchbook">
+            <svg viewBox="0 0 120 36" class="enter-svg" xmlns="http://www.w3.org/2000/svg">
+              <rect x="2" y="2" width="116" height="32" rx="8" ry="8" fill="transparent" stroke="#111" stroke-width="3"></rect>
+              <text x="60" y="22" text-anchor="middle" font-family="Carrotflower, Amatic SC, sans-serif" font-size="14" fill="#111">enter</text>
+            </svg>
+          </button>
+
+          <div class="cover-doodles" aria-hidden="true">
+            <svg viewBox="0 0 100 40" class="small-doodle">
+              <path d="M4 30 q30 -40 60 -12" stroke="#111" stroke-width="2" fill="none"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- controls -->
+      <div class="controls" aria-hidden="false">
+        <button id="prevBtn" aria-label="Previous page">◀</button>
+        <button id="nextBtn" aria-label="Next page">▶</button>
+      </div>
+    </div>
+
+    <!-- ambient doodles -->
+    <div class="ambient" aria-hidden="true">
+      <div class="floating">✦</div>
+      <div class="floating">✿</div>
+      <div class="floating">☁</div>
+    </div>
+  </div>
+</body>
+</html>
