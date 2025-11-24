@@ -249,3 +249,37 @@ body { font-family: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Sego
   .left-page, .pages, .cover { position: relative !important; width: 100% !important; opacity: 1 !important; pointer-events: auto !important; display: block !important; }
   .controls { position: static; transform: none; margin: 12px 0; justify-content: center; }
 }
+
+/* --- Minimal overrides: ensure menu & font sit on top of backgroundpaper.png --- */
+
+/* Keep the open background non-interactive and behind UI chrome */
+.sketchbook.open::before {
+  pointer-events: none !important;
+  z-index: 5 !important; /* low so UI sits above it */
+}
+
+/* Page menu: top-left, visible when open, high z-index so it's never covered */
+#pageMenu {
+  position: absolute !important;
+  top: 12px !important;
+  left: 14px !important;
+  z-index: 3000 !important; /* high so it sits above the open background */
+  display: none !important; /* default hidden until book is open */
+  pointer-events: none !important; /* enabled only when open */
+  font-family: "Carrotflower", "Amatic SC", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue" !important;
+}
+
+/* Show and enable the menu when the book is open */
+.sketchbook.open #pageMenu {
+  display: flex !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
+}
+
+/* Ensure the menu controls themselves inherit the font and are clickable */
+#pageMenu button,
+#pageMenu select {
+  font-family: inherit !important;
+  pointer-events: auto !important;
+  z-index: 3001 !important;
+}
