@@ -1,7 +1,7 @@
 /* style.css
-   Simplified open state: when the book is open we remove the left/right framed panels
-   and show only backgroundpaper.png as the full spread background. Controls and menu
-   remain visible. This file replaces/merges with your existing stylesheet.
+   Update: ensure the closed-cover view is perfectly centered and that left/right panels
+   and the page chrome are hidden while closed. The open-state behavior is unchanged.
+   Paste this whole file over your existing style.css.
 */
 
 /* Typekit Carrotflower is loaded in index.html. Fallback to Amatic SC if missing. */
@@ -9,13 +9,14 @@
   --paper: #fbf7ef;
   --edge: #d8cbb9;
   --ink: #1b1b1b;
-  --spine: 12px;
+  --spine: 12px;        /* visual gutter between halves */
   --page-padding: 28px;
-  --gutter: 20px;
-  --open-bg-url: url("assets/backgroundpaper.png"); /* the new single open-background */
+  --gutter: 20px;       /* outer padding around the book area */
+  /* derive a single-page visual width from the available stage area */
+  --single-page-width: calc((100% - (var(--gutter) * 2)) / 2 - (var(--spine) / 2));
 }
 
-/* Basic reset */
+/* Reset & base */
 * { box-sizing: border-box; }
 html, body, #app { height:100%; margin:0; background:var(--paper); -webkit-font-smoothing:antialiased; }
 body {
@@ -24,7 +25,7 @@ body {
   overflow-y: auto;
 }
 
-/* full-bleed stage */
+/* subtle paper texture background */
 .paper-bg {
   position: fixed;
   inset: 0;
@@ -34,21 +35,128 @@ body {
     url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"><rect fill="%23fbf7ef" width="100%" height="100%"/></svg>');
 }
 
-/* sketchbook stage: full width */
+/* SKETCHBOOK: full-bleed stage */
 .sketchbook {
   width: 100%;
   min-height: calc(100vh - (var(--gutter) * 2));
   padding: var(--gutter);
+  margin: 0;
   position: relative;
   transform-style: preserve-3d;
   overflow: visible;
   user-select: none;
-  --open-bg-url: var(--open-bg-url);
+  -webkit-user-select: none;
+  --open-bg-url: url("assets/backgroundpaper.png");
 }
 
-/* OPEN STATE: full-spread background using backgroundpaper.png
-   rendered with a pseudo-element so it always sits behind UI chrome (menu, arrows).
-*/
+/* Breadcrumb: keep page menu hidden until open (JS also manages this) */
+.sketchbook:not(.open) #pageMenu { display: none !important; pointer-events: none !important; opacity: 0 !important; }
+
+/* LEFT PAGE (kept in DOM, but hidden when closed) */
+.left-page {
+  position: absolute;
+  top: var(--gutter);
+  left: var(--gutter);
+  bottom: var(--gutter);
+  width: var(--single-page-width);
+  padding: var(--page-padding);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 20;
+  background-image: url("assets/leftpage.png");
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-left: 6px solid rgba(0,0,0,0.03);
+}
+.left-page .left-page-section,
+.left-page .page-content { position: relative; z-index: 80; }
+
+/* PAGES (right half) */
+.pages {
+  position: absolute;
+  top: var(--gutter);
+  right: var(--gutter);
+  bottom: var(--gutter);
+  width: var(--single-page-width);
+  transform-style: preserve-3d;
+  z-index: 30;
+}
+.pages .page {
+  background-image: url("assets/rightpage.png");
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* COVER (visual single page when closed; returns to right half when open) */
+.cover {
+  z-index: 200;
+  right: var(--gutter);
+  left: auto;
+  width: var(--single-page-width);
+  position: absolute;
+  top: var(--gutter);
+  bottom: var(--gutter);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  transition: all 320ms ease;
+  transform-origin: center;
+}
+
+/* cover image via pseudo-element (below overlay content) */
+.cover::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  background: url("assets/bookcover.jpg") center/contain no-repeat;
+  pointer-events: none;
+  background-color: transparent;
+}
+
+/* CLOSED cover: center horizontally and vertically in the available viewport area.
+   Also use a constrained width so it looks like a single closed book. */
+.sketchbook:not(.open) .cover {
+  /* center the cover in the stage */
+  left: 50%;
+  top: 50%;
+  right: auto;
+  bottom: auto;
+  transform: translate(-50%, -50%) rotateY(0deg) !important;
+  /* keep the closed cover the visual size of a single page (but clamp on very wide screens) */
+  width: min(720px, var(--single-page-width));
+  height: auto;
+  max-height: calc(100vh - (var(--gutter) * 2));
+  padding: calc(var(--page-padding) * 1.0);
+  box-shadow: 0 30px 70px rgba(17,17,17,0.28);
+  border: 2px solid var(--edge);
+}
+
+/* When closed, hide the left & right panel visuals so only the centered cover shows */
+.sketchbook:not(.open) .left-page,
+.sketchbook:not(.open) .pages {
+  display: none !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+}
+
+/* OPEN cover returns to the right half and the open background shows */
+.sketchbook.open .cover {
+  left: auto;
+  right: var(--gutter);
+  top: var(--gutter);
+  bottom: var(--gutter);
+  transform: none;
+  width: var(--single-page-width);
+  box-shadow: none;
+  border: none;
+}
+
+/* OPEN background: full-spread backgroundpaper layer */
 .sketchbook.open::before {
   content: "";
   position: absolute;
@@ -59,63 +167,60 @@ body {
   z-index: 6;
   background: var(--open-bg-url) center/cover no-repeat;
   pointer-events: none;
-  border-radius: 0;
 }
 
-/* LEFT PAGE / RIGHT PAGES / COVER: kept in DOM but visually removed in open state.
-   This removes the framed window appearance and redundant inner title/heading windows. */
+/* When open, remove framed visuals from panels so the full-spread background is the primary surface */
 .sketchbook.open .left-page,
 .sketchbook.open .pages,
-.sketchbook.open .pages .page,
-.sketchbook.open .cover {
+.sketchbook.open .pages .page {
   background-image: none !important;
   background-color: transparent !important;
   border: none !important;
   box-shadow: none !important;
   opacity: 0 !important;
   pointer-events: none !important;
-  transform: none !important;
 }
 
-/* Ensure any content boxes do not create visible white blocks */
-.sketchbook.open .page-content,
-.sketchbook.open .left-page-section {
-  background: transparent !important;
-  color: inherit !important;
-  opacity: 0 !important; /* hide redundant textual UI that was overlapping */
-  pointer-events: none !important;
+/* cover overlay (title + subtitle + button) should always be centered inside cover */
+.cover-art {
+  text-align: center;
+  z-index: 20;
+  pointer-events: none;
+  width: 100%;
+  max-width: calc(var(--single-page-width) - (var(--page-padding) * 2));
 }
-
-/* Keep menu, controls, and cover overlay visible and interactive above the open background */
-.sketchbook.open #pageMenu,
-.sketchbook.open .controls,
-.sketchbook.open .cover-art {
-  opacity: 1 !important;
-  pointer-events: auto !important;
-  z-index: 1000 !important;
-}
-
-/* SMALL SCREENS: keep panels visible (stacked) for readability */
-@media (max-width: 560px) {
-  .sketchbook.open .left-page,
-  .sketchbook.open .pages,
-  .sketchbook.open .cover {
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    background-color: rgba(251,247,239,0.95) !important;
-    border: 1px solid rgba(0,0,0,0.06) !important;
-    box-shadow: 0 8px 18px rgba(17,17,17,0.08) !important;
-  }
-  .sketchbook.open::before { display: none !important; } /* don't force full-spread on tiny screens */
-}
-
-/* Controls/menu/button typography restored to Carrotflower */
-button, select, .nav-item {
+.cover-art .cover-title {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1;
   font-family: "Carrotflower", "Amatic SC", sans-serif;
-  -webkit-font-smoothing: antialiased;
+  color: var(--ink);
+}
+.cover-art .subtitle { margin: 6px 0 12px 0; color: #7a6a5a; }
+
+/* Enter button */
+.enter-btn {
+  pointer-events: auto;
+  margin-top: 6px;
+  padding: 10px 18px;
+  background: rgba(255,255,255,0.95);
+  border: 2px solid #cbb79f;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: "Carrotflower", "Amatic SC", sans-serif;
+  font-size: 18px;
+  color: var(--ink);
+  box-shadow: 0 6px 10px rgba(0,0,0,0.08);
 }
 
-/* Keep controls visible and on top */
+/* page content (hidden in open state to avoid duplicate titles) */
+.page-content { z-index: 80; width: 100%; color: var(--ink); background: transparent; font-size: 18px; }
+.sketchbook.open .page-content { display: none !important; }
+
+/* top-right menu: only visible once book is open (JS also controls this) */
+.sketchbook.open #pageMenu { display: flex !important; pointer-events: auto !important; opacity: 1 !important; }
+
+/* controls (prev/next) sit above everything */
 .controls {
   position: absolute;
   left: 50%;
@@ -132,7 +237,24 @@ button, select, .nav-item {
   border-radius: 6px;
   font-size: 18px;
   cursor: pointer;
+  font-family: "Carrotflower", "Amatic SC", sans-serif;
 }
 
-/* Misc: ensure no spine or gutter is visible when open */
+/* ensure no visible spine when open */
 .sketchbook.open::after { display: none !important; }
+
+/* responsive: smaller sizes and stacked layout on narrow viewports */
+@media (max-width: 880px) {
+  :root { --gutter: 12px; --page-padding: 18px; }
+  .sketchbook:not(.open) .cover { width: min(520px, var(--single-page-width)); }
+  .cover-art .cover-title { font-size: 22px; }
+  .enter-btn { font-size: 16px; padding: 8px 12px; }
+  .page-content h2 { font-size: 20px; }
+}
+
+@media (max-width: 560px) {
+  /* collapse to stacked flow for small screens: keep panels visible for readability */
+  .left-page, .pages, .cover { position: relative; width: 100%; top: 0; left: 0; right: 0; height: auto; opacity: 1 !important; display: block !important; pointer-events: auto !important; }
+  .sketchbook.open::before { display: none !important; } /* don't force full-spread background on tiny screens */
+  .controls { position: static; transform: none; margin: 12px 0; justify-content: center; }
+}
